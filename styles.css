@@ -1,0 +1,9 @@
+#emu {
+    height: 512px;
+    width: 600px;
+}
+
+#button {
+    background-color: lightblue;
+    border: none;
+}
