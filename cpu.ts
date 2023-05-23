@@ -11,6 +11,7 @@ class CPU {
   // Initialized RAM and Registers
   private ram: RAM;
   private registers!: Registers;
+  private executor: (instruction: CPU_INSTRUCTION) => void;
 
   // NMI
   private NMIflipped : boolean = false;
@@ -23,6 +24,7 @@ class CPU {
   constructor(ram: RAM) {
     this.ram = ram;
     this.init();
+    this.executor = new Execute(this.ram, this.registers).execute;
   }
 
   init() {
@@ -56,7 +58,7 @@ class CPU {
 
   checkInterupts() {
     if (this.ram.getNMI() && !this.NMIflipped) {
-      Execute.execute(CPU_INSTRUCTION.NMI, this.ram, this.registers);
+      this.executor(CPU_INSTRUCTION.NMI);
     }
     this.NMIflipped = this.ram.getNMI();
   }
@@ -70,7 +72,7 @@ class CPU {
   }
 
   execute() {
-    Execute.execute(this.instruction, this.ram, this.registers);
+    this.executor(this.instruction);
   }
 
   setCycles() {

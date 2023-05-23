@@ -6,10 +6,11 @@ enum Byte {
   HIGH,
 }
 
+// TODO: split vram out as dependency class
 class RAM {
   private buffer: ArrayBuffer = new ArrayBuffer(0xffff + 1);
   private vRam: Uint8Array = new Uint8Array(new ArrayBuffer(0x3fff));
-  private vRamAddress: number = 0x00;
+  public vRamAddress: number = 0x00;
   private vRamAddressByte: Byte = Byte.HIGH;
   private bytes: Uint8Array;
   private cartridge: Cartridge;
@@ -29,9 +30,15 @@ class RAM {
   }
 
   public get8(bit16address: number) {
+    if (bit16address === 0x2002) {
+      console.log("reading PPU Status, clearing VBL flag");
+      const value = this.bytes[bit16address]
+      this.bytes[bit16address] = value & 0b0111_1111;
+      return value;
+    }
     if (bit16address === 0x2007) {
-      console.log("reading data to PPU vRAM: ", this.bytes[bit16address]);
-      this.vRamAddress++;
+      console.log("reading data from PPU vRAM at: ", this.vRamAddress);
+      return this.vRam[this.vRamAddress++]
     }
 
     return this.bytes[bit16address];
@@ -62,8 +69,7 @@ class RAM {
     }
     if (bit16address === 0x2007) {
       console.log("sending data to PPU vRAM: ", value);
-      this.vRam[this.vRamAddress] = value;
-      this.vRamAddress++;
+      this.vRam[this.vRamAddress++] = value;
     }
 
     this.bytes[bit16address] = value;
@@ -74,6 +80,14 @@ class RAM {
     const high = value >> 8;
     this.bytes[bit16address] = low;
     this.bytes[bit16address + 1] = high;
+  }
+
+  public get8vRam(bit16address: number) {
+    return this.vRam[bit16address];
+  }
+
+  public getCHRROM() {
+    return this.cartridge.getCHRROM();
   }
 
   public getPPU_CTRL() {

@@ -4,7 +4,7 @@ import CPU from "./cpu";
 import PPU from "./ppu";
 import Clock from "./clock";
 
-const cartridge = new Cartridge("Super Mario Bros.nes");
+const cartridge = new Cartridge("nestest.nes");
 const ram = new RAM(cartridge);
 const cpu = new CPU(ram);
 const ppu = new PPU(ram);
@@ -60,7 +60,7 @@ enum POSITION {
 for (let x = 0; x < 16; x++) {
   for (let y = 0; y < 16; y++) {
     const shift = (x * 16 + y) * 16;
-    const tile = new Tile(chrrom.subarray(0 + shift, 16 + shift)).tile.flatMap(
+    const tile = new Tile(chrrom.subarray(0 + shift + 4096, 16 + shift + 4096)).tile.flatMap(
       (x) => x
     );
     const tileData = ctx.getImageData(y * 8, x * 8, 8, 8);
