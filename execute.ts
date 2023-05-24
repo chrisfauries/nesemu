@@ -39,61 +39,30 @@ class Execute {
    */
 
   private INX() {
-    this.utils.setRegisterValue(
-      DataRegister.X,
-      this.utils.getRegisterValue(DataRegister.X) + 1
-    );
-    this.utils.setNZ(this.utils.getRegisterValue(DataRegister.X));
-    this.utils.incPC();
+    this.utils.stepRegister(StepDirection.Increment, DataRegister.X);
   }
 
   private INY() {
-    this.utils.setRegisterValue(
-      DataRegister.Y,
-      this.utils.getRegisterValue(DataRegister.Y) + 1
-    );
-    this.utils.setNZ(this.utils.getRegisterValue(DataRegister.Y));
-    this.utils.incPC();
+    this.utils.stepRegister(StepDirection.Increment, DataRegister.Y);
   }
 
   private INC_Z() {
-    this.utils.incPC();
-    this.utils.setValue(
-      AddressingMode.Zero_Page,
-      this.utils.getValue(AddressingMode.Zero_Page) + 1
-    );
-    this.utils.setNZ(this.utils.getValue(AddressingMode.Zero_Page));
-    this.utils.incPC();
+    this.utils.stepMemory(StepDirection.Increment, AddressingMode.Zero_Page);
   }
 
   private INC_ZX() {
-    this.utils.incPC();
-    this.utils.setValue(
-      AddressingMode.Zero_Page_Offset_X,
-      this.utils.getValue(AddressingMode.Zero_Page_Offset_X) + 1
+    this.utils.stepMemory(
+      StepDirection.Increment,
+      AddressingMode.Zero_Page_Offset_X
     );
-    this.utils.setNZ(this.utils.getValue(AddressingMode.Zero_Page_Offset_X));
-    this.utils.incPC();
   }
 
   private INC_A() {
-    this.utils.incPC();
-    this.utils.setValue(
-      AddressingMode.Absolute,
-      this.utils.getValue(AddressingMode.Absolute) + 1
-    );
-    this.utils.setNZ(this.utils.getValue(AddressingMode.Absolute));
-    this.utils.incPC(2);
+    this.utils.stepMemory(StepDirection.Increment, AddressingMode.Absolute);
   }
 
   private INC_AX() {
-    this.utils.incPC();
-    this.utils.setValue(
-      AddressingMode.Absolute_X,
-      this.utils.getValue(AddressingMode.Absolute_X) + 1
-    );
-    this.utils.setNZ(this.utils.getValue(AddressingMode.Absolute_X));
-    this.utils.incPC(2);
+    this.utils.stepMemory(StepDirection.Increment, AddressingMode.Absolute_X);
   }
 
   /**
@@ -101,61 +70,30 @@ class Execute {
    */
 
   private DEX() {
-    this.utils.setRegisterValue(
-      DataRegister.X,
-      this.utils.getRegisterValue(DataRegister.X) - 1
-    );
-    this.utils.setNZ(this.utils.getRegisterValue(DataRegister.X));
-    this.utils.incPC();
+    this.utils.stepRegister(StepDirection.Decrement, DataRegister.X);
   }
 
   private DEY() {
-    this.utils.setRegisterValue(
-      DataRegister.Y,
-      this.utils.getRegisterValue(DataRegister.Y) - 1
-    );
-    this.utils.setNZ(this.utils.getRegisterValue(DataRegister.Y));
-    this.utils.incPC();
+    this.utils.stepRegister(StepDirection.Decrement, DataRegister.Y);
   }
 
   private DEC_Z() {
-    this.utils.incPC();
-    this.utils.setValue(
-      AddressingMode.Zero_Page,
-      this.utils.getValue(AddressingMode.Zero_Page) - 1
-    );
-    this.utils.setNZ(this.utils.getValue(AddressingMode.Zero_Page));
-    this.utils.incPC();
+    this.utils.stepMemory(StepDirection.Decrement, AddressingMode.Zero_Page);
   }
 
   private DEC_ZX() {
-    this.utils.incPC();
-    this.utils.setValue(
-      AddressingMode.Zero_Page_Offset_X,
-      this.utils.getValue(AddressingMode.Zero_Page_Offset_X) - 1
+    this.utils.stepMemory(
+      StepDirection.Decrement,
+      AddressingMode.Zero_Page_Offset_X
     );
-    this.utils.setNZ(this.utils.getValue(AddressingMode.Zero_Page_Offset_X));
-    this.utils.incPC();
   }
 
   private DEC_A() {
-    this.utils.incPC();
-    this.utils.setValue(
-      AddressingMode.Absolute,
-      this.utils.getValue(AddressingMode.Absolute) - 1
-    );
-    this.utils.setNZ(this.utils.getValue(AddressingMode.Absolute));
-    this.utils.incPC(2);
+    this.utils.stepMemory(StepDirection.Decrement, AddressingMode.Absolute);
   }
 
   private DEC_AX() {
-    this.utils.incPC();
-    this.utils.setValue(
-      AddressingMode.Absolute_X,
-      this.utils.getValue(AddressingMode.Absolute_X) - 1
-    );
-    this.utils.setNZ(this.utils.getValue(AddressingMode.Absolute_X));
-    this.utils.incPC(2);
+    this.utils.stepMemory(StepDirection.Decrement, AddressingMode.Absolute_X);
   }
 
   /**
@@ -195,231 +133,271 @@ class Execute {
    */
 
   private AND_I() {
-    this.utils.incPC();
-    const value = this.utils.getValue(AddressingMode.Immediate);
-    const result = value & this.utils.getRegisterValue(DataRegister.A);
-    this.utils.setRegisterValue(DataRegister.A, result);
-    this.utils.setNZ(this.utils.getRegisterValue(DataRegister.A));
-    this.utils.incPC();
+    this.utils.logicalOperation(
+      LogicalOperationType.AND,
+      AddressingMode.Immediate
+    );
   }
 
   private AND_Z() {
-    this.utils.incPC();
-    const value = this.utils.getValue(AddressingMode.Zero_Page);
-    const result = value & this.utils.getRegisterValue(DataRegister.A);
-    this.utils.setRegisterValue(DataRegister.A, result);
-    this.utils.setNZ(this.utils.getRegisterValue(DataRegister.A));
-    this.utils.incPC();
+    this.utils.logicalOperation(
+      LogicalOperationType.AND,
+      AddressingMode.Zero_Page
+    );
   }
 
   private AND_ZX() {
-    this.utils.incPC();
-    const value = this.utils.getValue(AddressingMode.Zero_Page_Offset_X);
-    const result = value & this.utils.getRegisterValue(DataRegister.A);
-    this.utils.setRegisterValue(DataRegister.A, result);
-    this.utils.setNZ(this.utils.getRegisterValue(DataRegister.A));
-    this.utils.incPC();
+    this.utils.logicalOperation(
+      LogicalOperationType.AND,
+      AddressingMode.Zero_Page_Offset_X
+    );
   }
 
   private AND_A() {
-    this.utils.incPC();
-    const value = this.utils.getValue(AddressingMode.Absolute);
-    const result = value & this.utils.getRegisterValue(DataRegister.A);
-    this.utils.setRegisterValue(DataRegister.A, result);
-    this.utils.setNZ(this.utils.getRegisterValue(DataRegister.A));
-    this.utils.incPC(2);
+    this.utils.logicalOperation(
+      LogicalOperationType.AND,
+      AddressingMode.Absolute
+    );
   }
 
   private AND_AX() {
-    this.utils.incPC();
-    const value = this.utils.getValue(AddressingMode.Absolute_X);
-    const result = value & this.utils.getRegisterValue(DataRegister.A);
-    this.utils.setRegisterValue(DataRegister.A, result);
-    this.utils.setNZ(this.utils.getRegisterValue(DataRegister.A));
-    this.utils.incPC(2);
+    this.utils.logicalOperation(
+      LogicalOperationType.AND,
+      AddressingMode.Absolute_X
+    );
   }
 
   private AND_AY() {
-    this.utils.incPC();
-    const value = this.utils.getValue(AddressingMode.Absolute_Y);
-    const result = value & this.utils.getRegisterValue(DataRegister.A);
-    this.utils.setRegisterValue(DataRegister.A, result);
-    this.utils.setNZ(this.utils.getRegisterValue(DataRegister.A));
-    this.utils.incPC(2);
+    this.utils.logicalOperation(
+      LogicalOperationType.AND,
+      AddressingMode.Absolute_Y
+    );
   }
 
   private AND_IX() {
-    this.utils.incPC();
-    const value = this.utils.getValue(AddressingMode.Indirect_Offset_X);
-    const result = value & this.utils.getRegisterValue(DataRegister.A);
-    this.utils.setRegisterValue(DataRegister.A, result);
-    this.utils.setNZ(this.utils.getRegisterValue(DataRegister.A));
-    this.utils.incPC();
+    this.utils.logicalOperation(
+      LogicalOperationType.AND,
+      AddressingMode.Indirect_Offset_X
+    );
   }
 
   private AND_IY() {
-    this.utils.incPC();
-    const value = this.utils.getValue(AddressingMode.Indirect_Offset_Y);
-    const result = value & this.utils.getRegisterValue(DataRegister.A);
-    this.utils.setRegisterValue(DataRegister.A, result);
-    this.utils.setNZ(this.utils.getRegisterValue(DataRegister.A));
-    this.utils.incPC();
+    this.utils.logicalOperation(
+      LogicalOperationType.AND,
+      AddressingMode.Indirect_Offset_Y
+    );
   }
 
   private EOR_I() {
-    this.utils.incPC();
-    const value = this.utils.getValue(AddressingMode.Immediate);
-    const result = value ^ this.utils.getRegisterValue(DataRegister.A);
-    this.utils.setRegisterValue(DataRegister.A, result);
-    this.utils.setNZ(this.utils.getRegisterValue(DataRegister.A));
-    this.utils.incPC();
+    this.utils.logicalOperation(
+      LogicalOperationType.EXCLUSIVE_OR,
+      AddressingMode.Immediate
+    );
   }
 
   private EOR_Z() {
-    this.utils.incPC();
-    const value = this.utils.getValue(AddressingMode.Zero_Page);
-    const result = value ^ this.utils.getRegisterValue(DataRegister.A);
-    this.utils.setRegisterValue(DataRegister.A, result);
-    this.utils.setNZ(this.utils.getRegisterValue(DataRegister.A));
-    this.utils.incPC();
+    this.utils.logicalOperation(
+      LogicalOperationType.EXCLUSIVE_OR,
+      AddressingMode.Zero_Page
+    );
   }
 
   private EOR_ZX() {
-    this.utils.incPC();
-    const value = this.utils.getValue(AddressingMode.Zero_Page_Offset_X);
-    const result = value ^ this.utils.getRegisterValue(DataRegister.A);
-    this.utils.setRegisterValue(DataRegister.A, result);
-    this.utils.setNZ(this.utils.getRegisterValue(DataRegister.A));
-    this.utils.incPC();
+    this.utils.logicalOperation(
+      LogicalOperationType.EXCLUSIVE_OR,
+      AddressingMode.Zero_Page_Offset_X
+    );
   }
 
   private EOR_A() {
-    this.utils.incPC();
-    const value = this.utils.getValue(AddressingMode.Absolute);
-    const result = value ^ this.utils.getRegisterValue(DataRegister.A);
-    this.utils.setRegisterValue(DataRegister.A, result);
-    this.utils.setNZ(this.utils.getRegisterValue(DataRegister.A));
-    this.utils.incPC(2);
+    this.utils.logicalOperation(
+      LogicalOperationType.EXCLUSIVE_OR,
+      AddressingMode.Absolute
+    );
   }
 
   private EOR_AX() {
-    this.utils.incPC();
-    const value = this.utils.getValue(AddressingMode.Absolute_X);
-    const result = value ^ this.utils.getRegisterValue(DataRegister.A);
-    this.utils.setRegisterValue(DataRegister.A, result);
-    this.utils.setNZ(this.utils.getRegisterValue(DataRegister.A));
-    this.utils.incPC(2);
+    this.utils.logicalOperation(
+      LogicalOperationType.EXCLUSIVE_OR,
+      AddressingMode.Absolute_X
+    );
   }
 
   private EOR_AY() {
-    this.utils.incPC();
-    const value = this.utils.getValue(AddressingMode.Absolute_Y);
-    const result = value ^ this.utils.getRegisterValue(DataRegister.A);
-    this.utils.setRegisterValue(DataRegister.A, result);
-    this.utils.setNZ(this.utils.getRegisterValue(DataRegister.A));
-    this.utils.incPC(2);
+    this.utils.logicalOperation(
+      LogicalOperationType.EXCLUSIVE_OR,
+      AddressingMode.Absolute_Y
+    );
   }
 
   private EOR_IX() {
-    this.utils.incPC();
-    const value = this.utils.getValue(AddressingMode.Indirect_Offset_X);
-    const result = value ^ this.utils.getRegisterValue(DataRegister.A);
-    this.utils.setRegisterValue(DataRegister.A, result);
-    this.utils.setNZ(this.utils.getRegisterValue(DataRegister.A));
-    this.utils.incPC();
+    this.utils.logicalOperation(
+      LogicalOperationType.EXCLUSIVE_OR,
+      AddressingMode.Indirect_Offset_X
+    );
   }
 
   private EOR_IY() {
-    this.utils.incPC();
-    const value = this.utils.getValue(AddressingMode.Indirect_Offset_Y);
-    const result = value ^ this.utils.getRegisterValue(DataRegister.A);
-    this.utils.setRegisterValue(DataRegister.A, result);
-    this.utils.setNZ(this.utils.getRegisterValue(DataRegister.A));
-    this.utils.incPC();
+    this.utils.logicalOperation(
+      LogicalOperationType.EXCLUSIVE_OR,
+      AddressingMode.Indirect_Offset_Y
+    );
   }
 
   private ORA_I() {
-    this.utils.incPC();
-    const value = this.utils.getValue(AddressingMode.Immediate);
-    const result = value | this.utils.getRegisterValue(DataRegister.A);
-    this.utils.setRegisterValue(DataRegister.A, result);
-    this.utils.setNZ(this.utils.getRegisterValue(DataRegister.A));
-    this.utils.incPC();
+    this.utils.logicalOperation(
+      LogicalOperationType.INCLUSIVE_OR,
+      AddressingMode.Immediate
+    );
   }
 
   private ORA_Z() {
-    this.utils.incPC();
-    const value = this.utils.getValue(AddressingMode.Zero_Page);
-    const result = value | this.utils.getRegisterValue(DataRegister.A);
-    this.utils.setRegisterValue(DataRegister.A, result);
-    this.utils.setNZ(this.utils.getRegisterValue(DataRegister.A));
-    this.utils.incPC();
+    this.utils.logicalOperation(
+      LogicalOperationType.INCLUSIVE_OR,
+      AddressingMode.Zero_Page
+    );
   }
 
   private ORA_ZX() {
-    this.utils.incPC();
-    const value = this.utils.getValue(AddressingMode.Zero_Page_Offset_X);
-    const result = value | this.utils.getRegisterValue(DataRegister.A);
-    this.utils.setRegisterValue(DataRegister.A, result);
-    this.utils.setNZ(this.utils.getRegisterValue(DataRegister.A));
-    this.utils.incPC();
+    this.utils.logicalOperation(
+      LogicalOperationType.INCLUSIVE_OR,
+      AddressingMode.Zero_Page_Offset_X
+    );
   }
 
   private ORA_A() {
-    this.utils.incPC();
-    const value = this.utils.getValue(AddressingMode.Absolute);
-    const result = value | this.utils.getRegisterValue(DataRegister.A);
-    this.utils.setRegisterValue(DataRegister.A, result);
-    this.utils.setNZ(this.utils.getRegisterValue(DataRegister.A));
-    this.utils.incPC(2);
+    this.utils.logicalOperation(
+      LogicalOperationType.INCLUSIVE_OR,
+      AddressingMode.Absolute
+    );
   }
 
   private ORA_AX() {
-    this.utils.incPC();
-    const value = this.utils.getValue(AddressingMode.Absolute_X);
-    const result = value | this.utils.getRegisterValue(DataRegister.A);
-    this.utils.setRegisterValue(DataRegister.A, result);
-    this.utils.setNZ(this.utils.getRegisterValue(DataRegister.A));
-    this.utils.incPC(2);
+    this.utils.logicalOperation(
+      LogicalOperationType.INCLUSIVE_OR,
+      AddressingMode.Absolute_X
+    );
   }
 
   private ORA_AY() {
-    this.utils.incPC();
-    const value = this.utils.getValue(AddressingMode.Absolute_Y);
-    const result = value | this.utils.getRegisterValue(DataRegister.A);
-    this.utils.setRegisterValue(DataRegister.A, result);
-    this.utils.setNZ(this.utils.getRegisterValue(DataRegister.A));
-    this.utils.incPC(2);
+    this.utils.logicalOperation(
+      LogicalOperationType.INCLUSIVE_OR,
+      AddressingMode.Absolute_Y
+    );
   }
 
   private ORA_IX() {
-    this.utils.incPC();
-    const value = this.utils.getValue(AddressingMode.Indirect_Offset_X);
-    const result = value | this.utils.getRegisterValue(DataRegister.A);
-    this.utils.setRegisterValue(DataRegister.A, result);
-    this.utils.setNZ(this.utils.getRegisterValue(DataRegister.A));
-    this.utils.incPC();
+    this.utils.logicalOperation(
+      LogicalOperationType.INCLUSIVE_OR,
+      AddressingMode.Indirect_Offset_X
+    );
   }
 
   private ORA_IY() {
-    this.utils.incPC();
-    const value = this.utils.getValue(AddressingMode.Indirect_Offset_Y);
-    const result = value | this.utils.getRegisterValue(DataRegister.A);
-    this.utils.setRegisterValue(DataRegister.A, result);
-    this.utils.setNZ(this.utils.getRegisterValue(DataRegister.A));
-    this.utils.incPC();
+    this.utils.logicalOperation(
+      LogicalOperationType.INCLUSIVE_OR,
+      AddressingMode.Indirect_Offset_Y
+    );
   }
 
-    /**
+  /**
    *  Load Register Instructions
    */
-    /**
+  private LDA_I() {
+    this.utils.loadDataRegister(DataRegister.A, AddressingMode.Immediate);
+  }
+
+  private LDA_Z() {
+    this.utils.loadDataRegister(DataRegister.A, AddressingMode.Zero_Page);
+  }
+
+  private LDA_ZX() {
+    this.utils.loadDataRegister(
+      DataRegister.A,
+      AddressingMode.Zero_Page_Offset_X
+    );
+  }
+
+  private LDA_A() {
+    this.utils.loadDataRegister(DataRegister.A, AddressingMode.Absolute);
+  }
+
+  private LDA_AX() {
+    this.utils.loadDataRegister(DataRegister.A, AddressingMode.Absolute_X);
+  }
+
+  private LDA_AY() {
+    this.utils.loadDataRegister(DataRegister.A, AddressingMode.Absolute_Y);
+  }
+
+  private LDA_IX() {
+    this.utils.loadDataRegister(
+      DataRegister.A,
+      AddressingMode.Indirect_Offset_X
+    );
+  }
+
+  private LDA_IY() {
+    this.utils.loadDataRegister(
+      DataRegister.A,
+      AddressingMode.Indirect_Offset_Y
+    );
+  }
+
+  private LDX_I() {
+    this.utils.loadDataRegister(DataRegister.X, AddressingMode.Immediate);
+  }
+
+  private LDX_Z() {
+    this.utils.loadDataRegister(DataRegister.X, AddressingMode.Zero_Page);
+  }
+
+  private LDX_ZY() {
+    this.utils.loadDataRegister(
+      DataRegister.X,
+      AddressingMode.Zero_Page_Offset_Y
+    );
+  }
+
+  private LDX_A() {
+    this.utils.loadDataRegister(DataRegister.X, AddressingMode.Absolute);
+  }
+
+  private LDX_AY() {
+    this.utils.loadDataRegister(DataRegister.X, AddressingMode.Absolute_Y);
+  }
+
+  private LDY_I() {
+    this.utils.loadDataRegister(DataRegister.Y, AddressingMode.Immediate);
+  }
+
+  private LDY_Z() {
+    this.utils.loadDataRegister(DataRegister.Y, AddressingMode.Zero_Page);
+  }
+
+  private LDY_ZX() {
+    this.utils.loadDataRegister(
+      DataRegister.Y,
+      AddressingMode.Zero_Page_Offset_X
+    );
+  }
+
+  private LDY_A() {
+    this.utils.loadDataRegister(DataRegister.Y, AddressingMode.Absolute);
+  }
+
+  private LDY_AX() {
+    this.utils.loadDataRegister(DataRegister.Y, AddressingMode.Absolute_X);
+  }
+
+  /**
    *  Store Register Instructions
    */
-    /**
+
+  
+  /**
    *  Transfer Register Instructions
    */
-
 
   // UNTESTED INSTRUCTIONS
 
@@ -437,85 +415,10 @@ class Execute {
   //   registers.incrementProgramCounter();
   // }
 
-  // private LDA_I() {
-  //   registers
-  //     .incrementProgramCounter()
-  //     .setAccumulator(ram.get8(registers.getProgramCounter()))
-  //     .setZeroNegativeFlagsFromValue(registers.getAccumulator())
-  //     .incrementProgramCounter();
-  // }
-
-  // private LDA_Z() {
-  //   registers
-  //     .incrementProgramCounter()
-  //     .setAccumulator(ram.get8(ram.get8(registers.getProgramCounter())))
-  //     .setZeroNegativeFlagsFromValue(registers.getAccumulator())
-  //     .incrementProgramCounter();
-  // }
-
-  // private LDA_A() {
-  //   registers
-  //     .incrementProgramCounter()
-  //     .setAccumulator(Utils.getAbsoluteValue(ram, registers))
-  //     .setZeroNegativeFlagsFromValue(registers.getAccumulator())
-  //     .incrementProgramCounter(2);
-  // }
-
-  // private LDA_AX() {
-  //   registers.incrementProgramCounter();
-  //   const value = Utils.getAbsoluteOffsetValue(
-  //     ram,
-  //     registers,
-  //     registers.getX()
-  //   );
-  //   registers
-  //     .setAccumulator(value)
-  //     .setZeroNegativeFlagsFromValue(registers.getAccumulator())
-  //     .incrementProgramCounter(2);
-  // }
-
-  // private LDA_AY() {
-  //   registers.incrementProgramCounter();
-  //   const value = Utils.getAbsoluteOffsetValue(
-  //     ram,
-  //     registers,
-  //     registers.getY()
-  //   );
-  //   registers
-  //     .setAccumulator(value)
-  //     .setZeroNegativeFlagsFromValue(registers.getAccumulator())
-  //     .incrementProgramCounter(2);
-  // }
-
   // private STA_A() {
   //   registers.incrementProgramCounter();
   //   Utils.setAbsoluteValue(ram, registers, registers.getAccumulator());
   //   registers.incrementProgramCounter(2);
-  // }
-
-  // private LDX_I() {
-  //   registers
-  //     .incrementProgramCounter()
-  //     .setX(ram.get8(registers.getProgramCounter()))
-  //     .setZeroNegativeFlagsFromValue(registers.getX())
-  //     .incrementProgramCounter();
-  // }
-
-  // private LDX_A() {
-  //   registers
-  //     .incrementProgramCounter()
-  //     .setX(Utils.getAbsoluteValue(ram, registers))
-  //     .setZeroNegativeFlagsFromValue(registers.getX())
-  //     .incrementProgramCounter(2);
-  // }
-
-  // private LDX_AY() {
-  //   registers.incrementProgramCounter();
-  //   const address = ram.get16(registers.getProgramCounter()) + registers.getY();
-  //   registers
-  //     .setX(ram.get8(address))
-  //     .setZeroNegativeFlagsFromValue(registers.getX())
-  //     .incrementProgramCounter(2);
   // }
 
   // private TXS_I() {
@@ -559,23 +462,6 @@ class Execute {
   //     registers.incrementProgramCounter(rel);
   //   }
   //   registers.incrementProgramCounter();
-  // }
-
-  // private LDY_I() {
-  //   registers
-  //     .incrementProgramCounter()
-  //     .setY(ram.get8(registers.getProgramCounter()))
-  //     .setZeroNegativeFlagsFromValue(registers.getY())
-  //     .incrementProgramCounter();
-  // }
-
-  // private LDY_A() {
-  //   // Utils.loadDataRegister(ram, registers, DataRegister.Y, AddressingMode.Absolute)
-  //   registers
-  //     .incrementProgramCounter()
-  //     .setY(Utils.getAbsoluteValue(ram, registers))
-  //     .setZeroNegativeFlagsFromValue(registers.getY())
-  //     .incrementProgramCounter(2);
   // }
 
   // private CMP_I() {
@@ -899,6 +785,11 @@ class Execute {
   // }
 }
 
+enum StepDirection {
+  Increment = 1,
+  Decrement = -1,
+}
+
 enum DataRegister {
   X,
   Y,
@@ -906,6 +797,7 @@ enum DataRegister {
 }
 
 enum AddressingMode {
+  Implied,
   Immediate,
   Zero_Page,
   Zero_Page_Offset_X,
@@ -916,6 +808,25 @@ enum AddressingMode {
   Indirect_Offset_X,
   Indirect_Offset_Y,
 }
+
+enum LogicalOperationType {
+  AND,
+  EXCLUSIVE_OR,
+  INCLUSIVE_OR,
+}
+
+const POST_EXECUTION_PC_STEPS = {
+  [AddressingMode.Implied]: 0,
+  [AddressingMode.Immediate]: 1,
+  [AddressingMode.Zero_Page]: 1,
+  [AddressingMode.Zero_Page_Offset_X]: 1,
+  [AddressingMode.Zero_Page_Offset_Y]: 1,
+  [AddressingMode.Absolute]: 2,
+  [AddressingMode.Absolute_X]: 2,
+  [AddressingMode.Absolute_Y]: 2,
+  [AddressingMode.Indirect_Offset_X]: 1,
+  [AddressingMode.Indirect_Offset_Y]: 1,
+} as const;
 
 // Util Functions
 class Utils {
@@ -953,17 +864,63 @@ class Utils {
     return this.ram.get8((0x10 << 8) + this.registers.getStackPointer());
   }
 
-  // Refactor to this
-  public loadDataRegister(
-    dataRegister: DataRegister,
-    addressingMode: AddressingMode
+  public logicalOperation(
+    type: LogicalOperationType,
+    mode: Exclude<AddressingMode, AddressingMode.Implied>
   ) {
-    this.registers.incrementProgramCounter();
-    const value = this.getValue(addressingMode);
-    this.loadRegister(dataRegister, value);
-    this.registers.setZeroNegativeFlagsFromValue(value);
-    const step = addressingMode === AddressingMode.Absolute ? 2 : 1;
-    this.registers.incrementProgramCounter(step);
+    this.incPC();
+    const value = this.getValue(mode);
+    const result = this.doLogic(
+      value,
+      this.getRegisterValue(DataRegister.A),
+      type
+    );
+    this.setRegisterValue(DataRegister.A, result);
+    this.setNZ(this.getRegisterValue(DataRegister.A));
+    this.postOpIncPC(mode);
+  }
+
+  private doLogic(a: number, b: number, type: LogicalOperationType) {
+    switch (type) {
+      case LogicalOperationType.AND:
+        return a & b;
+      case LogicalOperationType.EXCLUSIVE_OR:
+        return a ^ b;
+      case LogicalOperationType.INCLUSIVE_OR:
+        return a | b;
+    }
+  }
+
+  public stepRegister(
+    direction: StepDirection,
+    reg: Exclude<DataRegister, DataRegister.A>
+  ) {
+    this.setRegisterValue(reg, this.getRegisterValue(reg) + direction);
+    this.setNZ(this.getRegisterValue(reg));
+    this.incPC();
+  }
+
+  public stepMemory(
+    direction: StepDirection,
+    mode: Extract<
+      AddressingMode,
+      | AddressingMode.Zero_Page
+      | AddressingMode.Zero_Page_Offset_X
+      | AddressingMode.Absolute
+      | AddressingMode.Absolute_X
+    >
+  ) {
+    this.incPC();
+    this.setValue(mode, this.getValue(mode) + direction);
+    this.setNZ(this.getValue(mode));
+    this.postOpIncPC(mode);
+  }
+
+  public loadDataRegister(reg: DataRegister, mode: AddressingMode) {
+    this.incPC();
+    this.setRegisterValue(reg, this.getValue(mode));
+    this.registers.setZeroNegativeFlagsFromValue(this.getRegisterValue(reg));
+    this.postOpIncPC(mode);
   }
 
   public getValue(addressingMode: AddressingMode) {
@@ -986,6 +943,8 @@ class Utils {
         return this.getIndirectOffsetXValue();
       case AddressingMode.Indirect_Offset_Y:
         return this.getIndirectOffsetYValue();
+      case AddressingMode.Implied:
+        throw new Error("do not use Implied Addressing Mode");
     }
   }
 
@@ -1007,6 +966,8 @@ class Utils {
         return this.setIndirectOffsetXValue(val);
       case AddressingMode.Indirect_Offset_Y:
         return this.setIndirectOffsetYValue(val);
+      case AddressingMode.Implied:
+        throw new Error("do not use Implied Addressing Mode");
     }
   }
 
@@ -1039,26 +1000,8 @@ class Utils {
   public incPC(val?: number) {
     this.registers.incrementProgramCounter(val);
   }
-
-  private loadRegister(dataRegister: DataRegister, value: number) {
-    switch (dataRegister) {
-      case DataRegister.A:
-        this.loadA(value);
-      case DataRegister.X:
-        this.loadX(value);
-      case DataRegister.Y:
-        this.loadY(value);
-    }
-  }
-
-  private loadA(value: number) {
-    this.registers.setAccumulator(value);
-  }
-  private loadX(value: number) {
-    this.registers.setX(value);
-  }
-  private loadY(value: number) {
-    this.registers.setY(value);
+  public postOpIncPC(mode: AddressingMode) {
+    this.registers.incrementProgramCounter(POST_EXECUTION_PC_STEPS[mode]);
   }
 
   private getImmediateValue() {

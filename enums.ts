@@ -124,7 +124,44 @@ export enum CPU_INSTRUCTION {
   /** Logical Inclusive OR - Indirect Y (2 bytes / 5-6 cycles) */
   ORA_IY = 0x11,
 
-  // Load Register Instructions
+  // Load Register Instructions - LDA, LDX, LDY
+
+  /** Load Accumulator - Immediate (2 bytes / 2 cycles) */
+  LDA_I = 0xa9,
+  /** Load Accumulator - Zero Page (2 bytes / 3 cycles) */
+  LDA_Z = 0xa5,
+  /** Load Accumulator - Zero Page X (2 bytes / 3 cycles) */
+  LDA_ZX = 0xb5,
+  /** Load Accumulator - Absolute (3 bytes / 4 cycles) */
+  LDA_A = 0xad,
+  /** Load Accumulator - Absolute X (3 bytes / 4-5 cycles) */
+  LDA_AX = 0xbd,
+  /** Load Accumulator - Absolute Y (3 bytes / 4-5 cycles) */
+  LDA_AY = 0xb9,
+  /** Load Accumulator - Indirect X (2 bytes / 6 cycles) */
+  LDA_IX = 0xa1,
+  /** Load Accumulator - Indirect Y (2 bytes / 5-6 cycles) */
+  LDA_IY = 0xb1,
+  /** Load X Register - Immediate (2 bytes / 2 cycles) */
+  LDX_I = 0xa2,
+  /** Load X Register - Zero Page (2 bytes / 3 cycles) */
+  LDX_Z = 0xa6,
+  /** Load X Register - Zero Page Y (2 bytes / 4 cycles) */
+  LDX_ZY = 0xb6,
+  /** Load X Register - Absolute (2 bytes / 2 cycles) */
+  LDX_A = 0xae,
+  /** Load X Register - Absolute Y (3 bytes / 4 cycles) */
+  LDX_AY = 0xbe,
+  /** LDY - Load Y Register - Immediate (2 bytes / 2 cycles) */
+  LDY_I = 0xa0,
+  /** LDY - Load Y Register - Zero Page (2 bytes / 3 cycles) */
+  LDY_Z = 0xa4,
+  /** LDY - Load Y Register - Zero Page X (2 bytes / 4 cycles) */
+  LDY_ZX = 0xb4,
+  /** LDY - Load Y Register - Absolute (3 bytes / 4 cycles) */
+  LDY_A = 0xac,
+  /** LDY - Load Y Register - Absolute X (3 bytes / 4-5 cycles) */
+  LDY_AX = 0xbc,
 
   // Store Register Instructions
 
@@ -132,24 +169,12 @@ export enum CPU_INSTRUCTION {
 
   /** Logical Shift Right - Accumulator (1 byte / 2 cycles) */
   LSR_A = 0x4a,
-  /** Load Accumulator - Immediate (2 bytes / 2 cycles) */
-  LDA_I = 0xa9,
   /** Add With Carry - Immediate (2 bytes / 2 cycles) */
   ADC_I = 0x69,
   /** Add With Carry - Absolute (3 bytes / 4 cycles) */
   ADC_A = 0x6d,
   /** Add With Carry - Absolute Y (3 bytes / 4-5 cycles) */
   ADC_AY = 0x79,
-  /** Load Accumulator - Zero Page (2 bytes / 3 cycles) */
-  LDA_Z = 0xa5,
-  /** Load Accumulator - Absolute (3 bytes / 4 cycles) */
-  LDA_A = 0xad,
-  /** Load Accumulator - Absolute X (3 bytes / 4-5 cycles) */
-  LDA_AX = 0xbd,
-  /** Load Accumulator - Absolute Y (3 bytes / 4-5 cycles) */
-  LDA_AY = 0xb9,
-  /** Load Accumulator - Indirect Y (2 bytes / 6 cycles) */
-  LDA_IY = 0xb1,
   /** Store Accumulator - Absolute (3 bytes / 4 cycles) */
   STA_A = 0x8d,
   /** Store Accumulator - Absolute X (3 bytes / 5 cycles) */
@@ -160,12 +185,7 @@ export enum CPU_INSTRUCTION {
   STA_IY = 0x91,
   /** Store Accumulator - Zero Page (2 bytes / 3 cycles) */
   STA_Z = 0x85,
-  /** Load X Register - Immediate (2 bytes / 2 cycles) */
-  LDX_I = 0xa2,
-  /** Load X Register - Absolute (2 bytes / 2 cycles) */
-  LDX_A = 0xae,
-  /** Load X Register - Absolute Y (3 bytes / 4 cycles) */
-  LDX_AY = 0xbe,
+
   /** Transfer X to Stack Pointer - Implied (1 byte / 2 cycles) */
   TXS_I = 0x9a,
   /** Transfer X to Accumulator - Implied (1 byte / 2 cycles) */
@@ -176,10 +196,7 @@ export enum CPU_INSTRUCTION {
   TAY_I = 0xa8,
   /** BPL - Branch if Positive - Relative (2 bytes / 2-3 cycles) */
   BPL_R = 0x10,
-  /** LDY - Load Y Register - Immediate (2 bytes / 2 cycles) */
-  LDY_I = 0xa0,
-  /** LDY - Load Y Register - Absolute (3 bytes / 4 cycles) */
-  LDY_A = 0xac,
+
   /** Compare - Immediate (2 bytes / 2 cycles) */
   CMP_I = 0xc9,
   /** Branch If Carry Set - Relative (2 byte / 2-4 cycles) */
@@ -284,29 +301,38 @@ export const CPU_INSTRUCTION_CYCLES: {
   ORA_AY: 5,
   ORA_IX: 6,
   ORA_IY: 6,
+  // Load Register Instructions
+  LDA_I: 2,
+  LDA_Z: 3,
+  LDA_ZX: 4,
+  LDA_A: 4,
+  LDA_AX: 5,
+  LDA_AY: 5,
+  LDA_IX: 6,
+  LDA_IY: 6,
+  LDX_I: 2,
+  LDX_Z: 3,
+  LDX_ZY: 4,
+  LDX_A: 4,
+  LDX_AY: 4,
+  LDY_I: 2,
+  LDY_Z: 3,
+  LDY_ZX: 4,
+  LDY_A: 4,
+  LDY_AX: 5,
+  // Store Register Instructions
 
   BCC_R: 4,
   LSR_A: 2,
-  LDA_I: 2,
-  LDA_A: 4,
-  LDA_Z: 3,
-  LDA_AX: 5,
-  LDA_AY: 5,
-  LDA_IY: 6,
   STA_A: 4,
   STA_AX: 5,
   STA_AY: 5,
   STA_IY: 6,
-  LDX_I: 2,
-  LDX_A: 4,
-  LDX_AY: 4,
   TXS_I: 2,
   TXA_I: 2,
   TAX_I: 2,
   TAY_I: 2,
   BPL_R: 3,
-  LDY_I: 2,
-  LDY_A: 4,
   CMP_I: 2,
   BCS: 4,
   BEQ: 4,

@@ -389,6 +389,8 @@ describe("Status Flag Instructions", () => {
   });
 });
 
+// TODO: for all logical operations, use describe.each()
+
 describe("Logical AND Instructions", () => {
   test("AND_I", () => {
     const opcode = 0x29;
@@ -1158,6 +1160,338 @@ describe("Logical Inclusive OR Instructions", () => {
     checkReg(reg, { a: 0x0f, pc: 2 });
     checkFlags(reg, { zero: false, negative: false });
   });
+});
+
+interface LoadRegisterInputs {
+  memVal: number;
+  regVal: number;
+  result: number;
+  zero: boolean;
+  negative: boolean;
+}
+
+describe.each<[LoadRegisterInputs]>([
+  [{ memVal: 0x05, regVal: 0x00, result: 0x05, zero: false, negative: false }],
+  [{ memVal: 0xff, regVal: 0x00, result: 0xff, zero: false, negative: true }],
+  [{ memVal: 0x00, regVal: 0x00, result: 0x00, zero: true, negative: false }],
+])(
+  "Load Register Instructions",
+  ({ memVal, regVal, result, zero, negative }) => {
+    test("LDA_I" + `: ${result}`, () => {
+      const opcode = 0xa9;
+      assertOpcode("LDA_I", opcode);
+      const ram = getRam({ 0x00: opcode, 0x01: memVal });
+      const reg = getRegisters({ a: regVal });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.LDA_I);
+      checkReg(reg, { a: result, pc: 2 });
+      checkFlags(reg, { zero, negative });
+    });
+    test("LDA_Z" + `: ${result}`, () => {
+      const opcode = 0xa5;
+      assertOpcode("LDA_Z", opcode);
+      const ram = getRam({ 0x00: opcode, 0x01: 0x08, 0x08: memVal });
+      const reg = getRegisters({ a: regVal });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.LDA_Z);
+      checkReg(reg, { a: result, pc: 2 });
+      checkFlags(reg, { zero, negative });
+    });
+    test("LDA_ZX" + `: ${result}`, () => {
+      const opcode = 0xb5;
+      assertOpcode("LDA_ZX", opcode);
+      const ram = getRam({ 0x00: opcode, 0x01: 0x05, 0x08: memVal });
+      const reg = getRegisters({ a: regVal, x: 0x03 });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.LDA_ZX);
+      checkReg(reg, { a: result, pc: 2 });
+      checkFlags(reg, { zero, negative });
+
+      // Wrap (TODO: move this)
+      reg.setProgramCounter(0x00);
+      reg.setX(0xff);
+      ram.set8(0x04, 0x10);
+      reg.setAccumulator(0x00);
+      run.execute(CPU_INSTRUCTION.LDA_ZX);
+      checkReg(reg, { a: 0x10, pc: 2 });
+      checkFlags(reg, { zero: false, negative: false });
+    });
+    test("LDA_A" + `: ${result}`, () => {
+      const opcode = 0xad;
+      assertOpcode("LDA_A", opcode);
+      const ram = getRam({
+        0x00: opcode,
+        0x01: 0x05,
+        0x02: 0x2e,
+        0x2e05: memVal,
+      });
+      const reg = getRegisters({ a: regVal });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.LDA_A);
+      checkReg(reg, { a: result, pc: 3 });
+      checkFlags(reg, { zero, negative });
+    });
+    test("LDA_AX" + `: ${result}`, () => {
+      const opcode = 0xbd;
+      assertOpcode("LDA_AX", opcode);
+      const ram = getRam({
+        0x00: opcode,
+        0x01: 0x05,
+        0x02: 0x2e,
+        0x2e15: memVal,
+      });
+      const reg = getRegisters({ a: regVal, x: 0x10 });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.LDA_AX);
+      checkReg(reg, { a: result, pc: 3 });
+      checkFlags(reg, { zero, negative });
+
+      // Next Page (TODO: move this)
+      reg.setProgramCounter(0x00);
+      reg.setX(0xff);
+      ram.set8(0x2f04, 0x10);
+      reg.setAccumulator(0x00);
+      run.execute(CPU_INSTRUCTION.LDA_AX);
+      checkReg(reg, { a: 0x10, pc: 3 });
+      checkFlags(reg, { zero: false, negative: false });
+    });
+    test("LDA_AY" + `: ${result}`, () => {
+      const opcode = 0xb9;
+      assertOpcode("LDA_AY", opcode);
+      const ram = getRam({
+        0x00: opcode,
+        0x01: 0x05,
+        0x02: 0x2e,
+        0x2e15: 0x05,
+      });
+      const reg = getRegisters({ a: 0x00, y: 0x10 });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.LDA_AY);
+      checkReg(reg, { a: 0x05, pc: 3 });
+      checkFlags(reg, { zero: false, negative: false });
+
+      // Next Page (TODO: Move this)
+      reg.setProgramCounter(0x00);
+      reg.setY(0xff);
+      ram.set8(0x2f04, 0x10);
+      reg.setAccumulator(0x00);
+      run.execute(CPU_INSTRUCTION.LDA_AY);
+      checkReg(reg, { a: 0x10, pc: 3 });
+      checkFlags(reg, { zero: false, negative: false });
+    });
+    test("LDA_IX" + `: ${result}`, () => {
+      const opcode = 0xa1;
+      assertOpcode("LDA_IX", opcode);
+      const ram = getRam({
+        0x00: opcode,
+        0x01: 0x05,
+        0x15: 0x02,
+        0x16: 0x1d,
+        0x1d02: memVal,
+      });
+      const reg = getRegisters({ a: regVal, x: 0x10 });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.LDA_IX);
+      checkReg(reg, { a: result, pc: 2 });
+      checkFlags(reg, { zero, negative });
+
+      // Wrap (TODO: Move this)
+      reg.setProgramCounter(0x00);
+      reg.setX(0xff);
+      ram.set8(0x04, 0x02);
+      ram.set8(0x05, 0x1d);
+      ram.set8(0x1d02, 0x10);
+      reg.setAccumulator(0x00);
+      run.execute(CPU_INSTRUCTION.LDA_IX);
+      checkReg(reg, { a: 0x10, pc: 2 });
+      checkFlags(reg, { zero: false, negative: false });
+    });
+    test("LDA_IY" + `: ${result}`, () => {
+      const opcode = 0xb1;
+      assertOpcode("LDA_IY", opcode);
+      const ram = getRam({
+        0x00: opcode,
+        0x01: 0x05,
+        0x05: 0x15,
+        0x06: 0x2e,
+        0x2e25: memVal,
+      });
+      const reg = getRegisters({ a: regVal, y: 0x10 });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.LDA_IY);
+      checkReg(reg, { a: result, pc: 2 });
+      checkFlags(reg, { zero, negative });
+
+      // Next Page (TODO: Move this)
+      reg.setProgramCounter(0x00);
+      reg.setY(0xff);
+      ram.set8(0x2f14, 0x10);
+      reg.setAccumulator(0x00);
+      run.execute(CPU_INSTRUCTION.LDA_IY);
+      checkReg(reg, { a: 0x10, pc: 2 });
+      checkFlags(reg, { zero: false, negative: false });
+    });
+    test("LDX_I" + `: ${result}`, () => {
+      const opcode = 0xa2;
+      assertOpcode("LDX_I", opcode);
+      const ram = getRam({ 0x00: opcode, 0x01: memVal });
+      const reg = getRegisters({ x: regVal });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.LDX_I);
+      checkReg(reg, { x: result, pc: 2 });
+      checkFlags(reg, { zero, negative });
+    });
+    test("LDX_Z" + `: ${result}`, () => {
+      const opcode = 0xa6;
+      assertOpcode("LDX_Z", opcode);
+      const ram = getRam({ 0x00: opcode, 0x01: 0x08, 0x08: memVal });
+      const reg = getRegisters({ x: regVal });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.LDX_Z);
+      checkReg(reg, { x: result, pc: 2 });
+      checkFlags(reg, { zero, negative });
+    });
+    test("LDX_ZY" + `: ${result}`, () => {
+      const opcode = 0xb6;
+      assertOpcode("LDX_ZY", opcode);
+      const ram = getRam({ 0x00: opcode, 0x01: 0x05, 0x08: memVal });
+      const reg = getRegisters({ x: regVal, y: 0x03 });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.LDX_ZY);
+      checkReg(reg, { x: result, pc: 2 });
+      checkFlags(reg, { zero, negative });
+
+      // Wrap (TODO: Move this)
+      reg.setProgramCounter(0x00);
+      reg.setY(0xff);
+      ram.set8(0x04, 0x10);
+      reg.setX(0x00);
+      run.execute(CPU_INSTRUCTION.LDX_ZY);
+      checkReg(reg, { x: 0x10, pc: 2 });
+      checkFlags(reg, { zero: false, negative: false });
+    });
+    test("LDX_A" + `: ${result}`, () => {
+      const opcode = 0xae;
+      assertOpcode("LDX_A", opcode);
+      const ram = getRam({
+        0x00: opcode,
+        0x01: 0x05,
+        0x02: 0x2e,
+        0x2e05: memVal,
+      });
+      const reg = getRegisters({ x: regVal });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.LDX_A);
+      checkReg(reg, { x: result, pc: 3 });
+      checkFlags(reg, { zero, negative });
+    });
+    test("LDX_AY" + `: ${result}`, () => {
+      const opcode = 0xbe;
+      assertOpcode("LDX_AY", opcode);
+      const ram = getRam({
+        0x00: opcode,
+        0x01: 0x05,
+        0x02: 0x2e,
+        0x2e15: memVal,
+      });
+      const reg = getRegisters({ x: regVal, y: 0x10 });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.LDX_AY);
+      checkReg(reg, { x: result, pc: 3 });
+      checkFlags(reg, { zero, negative });
+
+      // Next Page (TODO: Move this)
+      reg.setProgramCounter(0x00);
+      reg.setY(0xff);
+      ram.set8(0x2f04, 0x10);
+      reg.setX(0x00);
+      run.execute(CPU_INSTRUCTION.LDX_AY);
+      checkReg(reg, { x: 0x10, pc: 3 });
+      checkFlags(reg, { zero: false, negative: false });
+    });
+    test("LDY_I" + `: ${result}`, () => {
+      const opcode = 0xa0;
+      assertOpcode("LDY_I", opcode);
+      const ram = getRam({ 0x00: opcode, 0x01: memVal });
+      const reg = getRegisters({ y: regVal });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.LDY_I);
+      checkReg(reg, { y: result, pc: 2 });
+      checkFlags(reg, { zero, negative });
+    });
+    test("LDY_Z" + `: ${result}`, () => {
+      const opcode = 0xa4;
+      assertOpcode("LDY_Z", opcode);
+      const ram = getRam({ 0x00: opcode, 0x01: 0x08, 0x08: memVal });
+      const reg = getRegisters({ y: regVal });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.LDY_Z);
+      checkReg(reg, { y: result, pc: 2 });
+      checkFlags(reg, { zero, negative });
+    });
+    test("LDY_ZX" + `: ${result}`, () => {
+      const opcode = 0xb4;
+      assertOpcode("LDY_ZX", opcode);
+      const ram = getRam({ 0x00: opcode, 0x01: 0x05, 0x08: memVal });
+      const reg = getRegisters({ y: regVal, x: 0x03 });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.LDY_ZX);
+      checkReg(reg, { y: result, pc: 2 });
+      checkFlags(reg, { zero, negative });
+
+      // Wrap (TODO: Move this)
+      reg.setProgramCounter(0x00);
+      reg.setX(0xff);
+      ram.set8(0x04, 0x10);
+      reg.setY(0x00);
+      run.execute(CPU_INSTRUCTION.LDY_ZX);
+      checkReg(reg, { y: 0x10, pc: 2 });
+      checkFlags(reg, { zero: false, negative: false });
+    });
+    test("LDY_A" + `: ${result}`, () => {
+      const opcode = 0xac;
+      assertOpcode("LDY_A", opcode);
+      const ram = getRam({
+        0x00: opcode,
+        0x01: 0x05,
+        0x02: 0x2e,
+        0x2e05: memVal,
+      });
+      const reg = getRegisters({ y: regVal });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.LDY_A);
+      checkReg(reg, { y: result, pc: 3 });
+      checkFlags(reg, { zero, negative });
+    });
+    test("LDY_AX" + `: ${result}`, () => {
+      const opcode = 0xbc;
+      assertOpcode("LDY_AX", opcode);
+      const ram = getRam({
+        0x00: opcode,
+        0x01: 0x05,
+        0x02: 0x2e,
+        0x2e15: memVal,
+      });
+      const reg = getRegisters({ y: regVal, x: 0x10 });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.LDY_AX);
+      checkReg(reg, { y: result, pc: 3 });
+      checkFlags(reg, { zero, negative });
+
+      // Next Page (TODO: Move this)
+      reg.setProgramCounter(0x00);
+      reg.setX(0xff);
+      ram.set8(0x2f04, 0x10);
+      reg.setY(0x00);
+      run.execute(CPU_INSTRUCTION.LDY_AX);
+      checkReg(reg, { y: 0x10, pc: 3 });
+      checkFlags(reg, { zero: false, negative: false });
+    });
+  }
+);
+
+describe("Store Register Instructions", () => {
+
 });
 
 describe.skip("Arithmetic Instructions", () => {
