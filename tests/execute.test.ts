@@ -1,5 +1,4 @@
 import { CPU_INSTRUCTION } from "../enums";
-import Execute from "../execute";
 import {
   getRam,
   getRegisters,
@@ -7,6 +6,7 @@ import {
   checkReg,
   assertOpcode,
   setup,
+  checkRam,
 } from "./utils";
 
 describe("Increment Instructions", () => {
@@ -1262,13 +1262,13 @@ describe.each<[LoadRegisterInputs]>([
         0x00: opcode,
         0x01: 0x05,
         0x02: 0x2e,
-        0x2e15: 0x05,
+        0x2e15: memVal,
       });
-      const reg = getRegisters({ a: 0x00, y: 0x10 });
+      const reg = getRegisters({ a: regVal, y: 0x10 });
       const run = setup(ram, reg);
       run.execute(CPU_INSTRUCTION.LDA_AY);
-      checkReg(reg, { a: 0x05, pc: 3 });
-      checkFlags(reg, { zero: false, negative: false });
+      checkReg(reg, { a: result, pc: 3 });
+      checkFlags(reg, { zero, negative });
 
       // Next Page (TODO: Move this)
       reg.setProgramCounter(0x00);
@@ -1490,9 +1490,330 @@ describe.each<[LoadRegisterInputs]>([
   }
 );
 
-describe("Store Register Instructions", () => {
+interface StoreRegisterInputs {
+  memVal: number;
+  regVal: number;
+  result: number;
+}
 
+describe.each<[StoreRegisterInputs]>([
+  [{ memVal: 0x00, regVal: 0x05, result: 0x05 }],
+  [{ memVal: 0x00, regVal: 0xff, result: 0xff }],
+  [{ memVal: 0x00, regVal: 0x00, result: 0x00 }],
+])("Store Register Instructions", ({ memVal, regVal, result }) => {
+  test("STA_Z" + `: ${result}`, () => {
+    const opcode = 0x85;
+    assertOpcode("STA_Z", opcode);
+    const ram = getRam({ 0x00: opcode, 0x01: 0x08, 0x08: memVal });
+    const reg = getRegisters({ a: regVal });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.STA_Z);
+    checkReg(reg, { pc: 2 });
+    checkRam(ram, { 0x08: result });
+  });
+  test("STA_ZX" + `: ${result}`, () => {
+    const opcode = 0x95;
+    assertOpcode("STA_ZX", opcode);
+    const ram = getRam({ 0x00: opcode, 0x01: 0x05, 0x08: memVal });
+    const reg = getRegisters({ a: regVal, x: 0x03 });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.STA_ZX);
+    checkReg(reg, { pc: 2 });
+    checkRam(ram, { 0x08: result });
+
+    // Wrap (TODO: move this)
+    reg.setProgramCounter(0x00);
+    reg.setX(0xff);
+    ram.set8(0x04, 0x00);
+    reg.setAccumulator(0x10);
+    run.execute(CPU_INSTRUCTION.STA_ZX);
+    checkReg(reg, { pc: 2 });
+    checkRam(ram, { 0x04: 0x10 });
+  });
+  test("STA_A" + `: ${result}`, () => {
+    const opcode = 0x8d;
+    assertOpcode("STA_A", opcode);
+    const ram = getRam({
+      0x00: opcode,
+      0x01: 0x05,
+      0x02: 0x2e,
+      0x2e05: memVal,
+    });
+    const reg = getRegisters({ a: regVal });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.STA_A);
+    checkReg(reg, { pc: 3 });
+    checkRam(ram, { 0x2e05: result });
+  });
+  test("STA_AX" + `: ${result}`, () => {
+    // Start here
+    const opcode = 0x9d;
+    assertOpcode("STA_AX", opcode);
+    const ram = getRam({
+      0x00: opcode,
+      0x01: 0x05,
+      0x02: 0x2e,
+      0x2e15: memVal,
+    });
+    const reg = getRegisters({ a: regVal, x: 0x10 });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.STA_AX);
+    checkReg(reg, { pc: 3 });
+    checkRam(ram, { 0x2e15: result });
+
+    // Next Page (TODO: move this)
+    reg.setProgramCounter(0x00);
+    reg.setX(0xff);
+    ram.set8(0x2f04, 0x00);
+    reg.setAccumulator(0x10);
+    run.execute(CPU_INSTRUCTION.STA_AX);
+    checkReg(reg, { pc: 3 });
+    checkRam(ram, { 0x2f04: 0x10 });
+  });
+  test("STA_AY" + `: ${result}`, () => {
+    const opcode = 0x99;
+    assertOpcode("STA_AY", opcode);
+    const ram = getRam({
+      0x00: opcode,
+      0x01: 0x05,
+      0x02: 0x2e,
+      0x2e15: memVal,
+    });
+    const reg = getRegisters({ a: regVal, y: 0x10 });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.STA_AY);
+    checkReg(reg, { pc: 3 });
+    checkRam(ram, { 0x2e15: result });
+
+    // Next Page (TODO: Move this)
+    reg.setProgramCounter(0x00);
+    reg.setY(0xff);
+    ram.set8(0x2f04, 0x00);
+    reg.setAccumulator(0x10);
+    run.execute(CPU_INSTRUCTION.STA_AY);
+    checkReg(reg, { pc: 3 });
+    checkRam(ram, { 0x2f04: 0x10 });
+  });
+  test("STA_IX" + `: ${result}`, () => {
+    const opcode = 0x81;
+    assertOpcode("STA_IX", opcode);
+    const ram = getRam({
+      0x00: opcode,
+      0x01: 0x05,
+      0x15: 0x02,
+      0x16: 0x1d,
+      0x1d02: memVal,
+    });
+    const reg = getRegisters({ a: regVal, x: 0x10 });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.STA_IX);
+    checkReg(reg, { pc: 2 });
+    checkRam(ram, { 0x1d02: result });
+
+    // Wrap (TODO: Move this)
+    reg.setProgramCounter(0x00);
+    reg.setX(0xff);
+    ram.set8(0x04, 0x02);
+    ram.set8(0x05, 0x1d);
+    ram.set8(0x1d02, 0x00);
+    reg.setAccumulator(0x10);
+    run.execute(CPU_INSTRUCTION.STA_IX);
+    checkReg(reg, { pc: 2 });
+    checkRam(ram, { 0x1d02: 0x10 });
+  });
+  test("STA_IY" + `: ${result}`, () => {
+    const opcode = 0x91;
+    assertOpcode("STA_IY", opcode);
+    const ram = getRam({
+      0x00: opcode,
+      0x01: 0x05,
+      0x05: 0x15,
+      0x06: 0x2e,
+      0x2e25: memVal,
+    });
+    const reg = getRegisters({ a: regVal, y: 0x10 });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.STA_IY);
+    checkReg(reg, { pc: 2 });
+    checkRam(ram, { 0x2e25: result });
+
+    // Next Page (TODO: Move this)
+    reg.setProgramCounter(0x00);
+    reg.setY(0xff);
+    ram.set8(0x2f14, 0x00);
+    reg.setAccumulator(0x10);
+    run.execute(CPU_INSTRUCTION.STA_IY);
+    checkReg(reg, { pc: 2 });
+    checkRam(ram, { 0x2f14: 0x10 });
+  });
+
+  test("STX_Z" + `: ${result}`, () => {
+    const opcode = 0x86;
+    assertOpcode("STX_Z", opcode);
+    const ram = getRam({ 0x00: opcode, 0x01: 0x08, 0x08: memVal });
+    const reg = getRegisters({ x: regVal });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.STX_Z);
+    checkReg(reg, { pc: 2 });
+    checkRam(ram, { 0x08: result });
+  });
+  test("STX_ZY" + `: ${result}`, () => {
+    const opcode = 0x96;
+    assertOpcode("STX_ZY", opcode);
+    const ram = getRam({ 0x00: opcode, 0x01: 0x05, 0x08: memVal });
+    const reg = getRegisters({ x: regVal, y: 0x03 });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.STX_ZY);
+    checkReg(reg, { x: result, pc: 2 });
+    checkRam(ram, { 0x08: result });
+
+    // Wrap (TODO: Move this)
+    reg.setProgramCounter(0x00);
+    reg.setY(0xff);
+    ram.set8(0x04, 0x00);
+    reg.setX(0x10);
+    run.execute(CPU_INSTRUCTION.STX_ZY);
+    checkReg(reg, { pc: 2 });
+    checkRam(ram, { 0x04: 0x10 });
+  });
+  test("STX_A" + `: ${result}`, () => {
+    const opcode = 0x8e;
+    assertOpcode("STX_A", opcode);
+    const ram = getRam({
+      0x00: opcode,
+      0x01: 0x05,
+      0x02: 0x2e,
+      0x2e05: memVal,
+    });
+    const reg = getRegisters({ x: regVal });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.STX_A);
+    checkReg(reg, { pc: 3 });
+    checkRam(ram, { 0x2e05: result });
+  });
+
+  test("STY_Z" + `: ${result}`, () => {
+    const opcode = 0x84;
+    assertOpcode("STY_Z", opcode);
+    const ram = getRam({ 0x00: opcode, 0x01: 0x08, 0x08: memVal });
+    const reg = getRegisters({ y: regVal });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.STY_Z);
+    checkReg(reg, { pc: 2 });
+    checkRam(ram, { 0x08: result });
+  });
+  test("STY_ZX" + `: ${result}`, () => {
+    const opcode = 0x94;
+    assertOpcode("STY_ZX", opcode);
+    const ram = getRam({ 0x00: opcode, 0x01: 0x05, 0x08: memVal });
+    const reg = getRegisters({ y: regVal, x: 0x03 });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.STY_ZX);
+    checkReg(reg, { pc: 2 });
+    checkRam(ram, { 0x08: result });
+
+    // Wrap (TODO: Move this)
+    reg.setProgramCounter(0x00);
+    reg.setX(0xff);
+    ram.set8(0x04, 0x00);
+    reg.setY(0x10);
+    run.execute(CPU_INSTRUCTION.STY_ZX);
+    checkReg(reg, { y: 0x10, pc: 2 });
+    checkRam(ram, { 0x04: 0x10 });
+  });
+  test("STY_A" + `: ${result}`, () => {
+    const opcode = 0x8c;
+    assertOpcode("STY_A", opcode);
+    const ram = getRam({
+      0x00: opcode,
+      0x01: 0x05,
+      0x02: 0x2e,
+      0x2e05: memVal,
+    });
+    const reg = getRegisters({ y: regVal });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.STY_A);
+    checkReg(reg, { pc: 3 });
+    checkRam(ram, { 0x2e05: result });
+  });
 });
+
+interface TransferRegisterInputs {
+  regOut: number;
+  regIn: number;
+  zero: boolean;
+  negative: boolean;
+}
+
+describe.each<[TransferRegisterInputs]>([
+  [{ regOut: 0x05, regIn: 0x00, zero: false, negative: false }],
+  [{ regOut: 0xff, regIn: 0x00, zero: false, negative: true }],
+  [{ regOut: 0x00, regIn: 0x00, zero: true, negative: false }],
+])("Transfer Register Instructions", ({ regOut, regIn, zero, negative }) => {
+  test("TAX", () => {
+    const opcode = 0xaa;
+    assertOpcode("TAX", opcode);
+    const ram = getRam();
+    const reg = getRegisters({ a: regOut, x: regIn });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.TAX);
+    checkReg(reg, { a: regOut, x: regOut });
+    checkFlags(reg, { zero, negative });
+  });
+  test("TAY", () => {
+    const opcode = 0xa8;
+    assertOpcode("TAY", opcode);
+    const ram = getRam();
+    const reg = getRegisters({ a: regOut, y: regIn });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.TAY);
+    checkReg(reg, { a: regOut, y: regOut });
+    checkFlags(reg, { zero, negative });
+  });
+  test("TSX", () => {
+    const opcode = 0xba;
+    assertOpcode("TSX", opcode);
+    const ram = getRam();
+    const reg = getRegisters({ stackPointer: regOut, x: regIn });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.TSX);
+    checkReg(reg, { stackPointer: regOut, x: regOut });
+    checkFlags(reg, { zero, negative });
+  });
+  test("TXA", () => {
+    const opcode = 0x8a;
+    assertOpcode("TXA", opcode);
+    const ram = getRam();
+    const reg = getRegisters({ x: regOut, a: regIn });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.TXA);
+    checkReg(reg, { x: regOut, a: regOut });
+    checkFlags(reg, { zero, negative });
+  });
+  test("TXS", () => {
+    const opcode = 0x9a;
+    assertOpcode("TXS", opcode);
+    const ram = getRam();
+    const reg = getRegisters({ x: regOut, stackPointer: regIn });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.TXS);
+    checkReg(reg, { x: regOut, stackPointer: regOut });
+  });
+  test("TYA", () => {
+    const opcode = 0x98;
+    assertOpcode("TYA", opcode);
+    const ram = getRam();
+    const reg = getRegisters({ y: regOut, a: regIn });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.TYA);
+    checkReg(reg, { y: regOut, a: regOut });
+    checkFlags(reg, { zero, negative });
+  });
+});
+
+describe("Comparison Instructions", () => {});
+describe("Branch Register Instructions", () => {});
+
 
 describe.skip("Arithmetic Instructions", () => {
   // test("ADC_AY", () => {

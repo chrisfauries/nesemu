@@ -1,4 +1,4 @@
-import { CPU_INSTRUCTION } from "./enums";
+import { CPU_INSTRUCTION, STATUS_FLAGS } from "./enums";
 import RAM from "./ram";
 import Registers from "./registers";
 
@@ -32,7 +32,7 @@ class Execute {
     instructionsExecuted++;
   }
 
-  // TEST-BACKED INSTRUCTIONS
+  // **************** TEST-BACKED INSTRUCTIONS ****************
 
   /**
    *  Increment Instructions - INX, INY, INC
@@ -391,398 +391,440 @@ class Execute {
   }
 
   /**
-   *  Store Register Instructions
+   *  Store Register Instructions - STA, STX, STY
    */
 
-  
+  private STA_Z() {
+    this.utils.storeDataRegister(DataRegister.A, AddressingMode.Zero_Page);
+  }
+
+  private STA_ZX() {
+    this.utils.storeDataRegister(
+      DataRegister.A,
+      AddressingMode.Zero_Page_Offset_X
+    );
+  }
+
+  private STA_A() {
+    this.utils.storeDataRegister(DataRegister.A, AddressingMode.Absolute);
+  }
+
+  private STA_AX() {
+    this.utils.storeDataRegister(DataRegister.A, AddressingMode.Absolute_X);
+  }
+
+  private STA_AY() {
+    this.utils.storeDataRegister(DataRegister.A, AddressingMode.Absolute_Y);
+  }
+
+  private STA_IX() {
+    this.utils.storeDataRegister(
+      DataRegister.A,
+      AddressingMode.Indirect_Offset_X
+    );
+  }
+
+  private STA_IY() {
+    this.utils.storeDataRegister(
+      DataRegister.A,
+      AddressingMode.Indirect_Offset_Y
+    );
+  }
+
+  private STX_Z() {
+    this.utils.storeDataRegister(DataRegister.X, AddressingMode.Zero_Page);
+  }
+
+  private STX_ZY() {
+    this.utils.storeDataRegister(
+      DataRegister.X,
+      AddressingMode.Zero_Page_Offset_Y
+    );
+  }
+
+  private STX_A() {
+    this.utils.storeDataRegister(DataRegister.X, AddressingMode.Absolute);
+  }
+
+  private STY_Z() {
+    this.utils.storeDataRegister(DataRegister.Y, AddressingMode.Zero_Page);
+  }
+
+  private STY_ZX() {
+    this.utils.storeDataRegister(
+      DataRegister.Y,
+      AddressingMode.Zero_Page_Offset_X
+    );
+  }
+
+  private STY_A() {
+    this.utils.storeDataRegister(DataRegister.Y, AddressingMode.Absolute);
+  }
+
   /**
-   *  Transfer Register Instructions
+   *  Transfer Register Instructions - TAX, TAY, TSX, TXA, TXS, TYA
    */
 
-  // UNTESTED INSTRUCTIONS
+  private TAX() {
+    this.utils.transferDataRegister(DataRegister.A, DataRegister.X);
+  }
 
-  // private NOP() {
-  //   registers.incrementProgramCounter();
-  // }
+  private TAY() {
+    this.utils.transferDataRegister(DataRegister.A, DataRegister.Y);
+  }
+
+  private TSX() {
+    this.utils.transferDataRegister(DataRegister.STACK_POINTER, DataRegister.X);
+  }
+
+  private TXA() {
+    this.utils.transferDataRegister(DataRegister.X, DataRegister.A);
+  }
+
+  private TXS() {
+    this.utils.transferDataRegister(DataRegister.X, DataRegister.STACK_POINTER);
+  }
+
+  private TYA() {
+    this.utils.transferDataRegister(DataRegister.Y, DataRegister.A);
+  }
+
+  // **************** UNTESTED INSTRUCTIONS ****************
+
+  /**
+   *  Arithmetic Operations Instructions - ADC, SBC
+   */
+
+  private ADC_I() {
+    this.utils.arithmetic(AddressingMode.Immediate, ArithmeticType.Add);
+  }
+
+  private ADC_Z() {
+    this.utils.arithmetic(AddressingMode.Zero_Page, ArithmeticType.Add);
+  }
+
+  private ADC_ZX() {
+    this.utils.arithmetic(
+      AddressingMode.Zero_Page_Offset_X,
+      ArithmeticType.Add
+    );
+  }
+
+  private ADC_A() {
+    this.utils.arithmetic(AddressingMode.Absolute, ArithmeticType.Add);
+  }
+
+  private ADC_AX() {
+    this.utils.arithmetic(AddressingMode.Absolute_X, ArithmeticType.Add);
+  }
+
+  private ADC_AY() {
+    this.utils.arithmetic(AddressingMode.Absolute_Y, ArithmeticType.Add);
+  }
+
+  private ADC_IX() {
+    this.utils.arithmetic(AddressingMode.Indirect_Offset_X, ArithmeticType.Add);
+  }
+
+  private ADC_IY() {
+    this.utils.arithmetic(AddressingMode.Indirect_Offset_Y, ArithmeticType.Add);
+  }
+
+  private SBC_I() {
+    this.utils.arithmetic(AddressingMode.Immediate, ArithmeticType.Subtract);
+  }
+
+  private SBC_Z() {
+    this.utils.arithmetic(AddressingMode.Zero_Page, ArithmeticType.Subtract);
+  }
+
+  private SBC_ZX() {
+    this.utils.arithmetic(
+      AddressingMode.Zero_Page_Offset_X,
+      ArithmeticType.Subtract
+    );
+  }
+
+  private SBC_A() {
+    this.utils.arithmetic(AddressingMode.Absolute, ArithmeticType.Subtract);
+  }
+
+  private SBC_AX() {
+    this.utils.arithmetic(AddressingMode.Absolute_X, ArithmeticType.Subtract);
+  }
+
+  private SBC_AY() {
+    this.utils.arithmetic(AddressingMode.Absolute_Y, ArithmeticType.Subtract);
+  }
+
+  private SBC_IX() {
+    this.utils.arithmetic(
+      AddressingMode.Indirect_Offset_X,
+      ArithmeticType.Subtract
+    );
+  }
+
+  private SBC_IY() {
+    this.utils.arithmetic(
+      AddressingMode.Indirect_Offset_Y,
+      ArithmeticType.Subtract
+    );
+  }
+
+  /**
+   *  Comparison Operations Instructions - CMP, CPX, CPY
+   */
+
+  private CMP_I() {
+    this.utils.compare(AddressingMode.Immediate, DataRegister.A);
+  }
+
+  private CMP_Z() {
+    this.utils.compare(AddressingMode.Zero_Page, DataRegister.A);
+  }
+
+  private CMP_ZX() {
+    this.utils.compare(AddressingMode.Zero_Page_Offset_X, DataRegister.A);
+  }
+
+  private CMP_A() {
+    this.utils.compare(AddressingMode.Absolute, DataRegister.A);
+  }
+
+  private CMP_AX() {
+    this.utils.compare(AddressingMode.Absolute_X, DataRegister.A);
+  }
+
+  private CMP_AY() {
+    this.utils.compare(AddressingMode.Absolute_Y, DataRegister.A);
+  }
+
+  private CMP_IX() {
+    this.utils.compare(AddressingMode.Indirect_Offset_X, DataRegister.A);
+  }
+
+  private CMP_IY() {
+    this.utils.compare(AddressingMode.Indirect_Offset_Y, DataRegister.A);
+  }
+
+  private CPX_I() {
+    this.utils.compare(AddressingMode.Immediate, DataRegister.X);
+  }
+
+  private CPX_Z() {
+    this.utils.compare(AddressingMode.Zero_Page, DataRegister.X);
+  }
+
+  private CPX_A() {
+    this.utils.compare(AddressingMode.Absolute, DataRegister.X);
+  }
+
+  private CPY_I() {
+    this.utils.compare(AddressingMode.Immediate, DataRegister.Y);
+  }
+
+  private CPY_Z() {
+    this.utils.compare(AddressingMode.Zero_Page, DataRegister.Y);
+  }
+
+  private CPY_A() {
+    this.utils.compare(AddressingMode.Absolute, DataRegister.Y);
+  }
+
+  /**
+   *  Stack Operations Instructions - PHA, PHP, PLA, PLP
+   */
+
+  private PHA() {
+    this.utils.pushStackValue(this.registers.getAccumulator());
+    this.registers.incrementProgramCounter();
+  }
+
+  private PHP() {
+    this.utils.pushStackValue(this.registers.getStatusRegister());
+    this.registers.incrementProgramCounter();
+  }
+
+  private PLA() {
+    this.registers.setAccumulator(this.utils.pullStackValue());
+    this.registers.setZeroNegativeFlagsFromValue(
+      this.registers.getAccumulator()
+    );
+    this.registers.incrementProgramCounter();
+  }
+
+  private PLP() {
+    this.registers.setStatusRegister(this.utils.pullStackValue());
+    this.registers.incrementProgramCounter();
+  }
+
+  /**
+   *  Branch Operations Instructions - BCC, BCS, BEQ, BMI, BNE, BPL, BVC, BVS
+   */
+
+  private BCS() {
+    this.utils.branch(this.registers.getCarry());
+  }
+
+  private BCC() {
+    this.utils.branch(!this.registers.getCarry());
+  }
+
+  private BEQ() {
+    this.utils.branch(this.registers.getZero());
+  }
+
+  private BNE() {
+    this.utils.branch(!this.registers.getZero());
+  }
+
+  private BMI() {
+    this.utils.branch(this.registers.getNegative());
+  }
+
+  private BPL() {
+    this.utils.branch(!this.registers.getNegative());
+  }
+
+  private BVS() {
+    this.utils.branch(this.registers.getOverflow());
+  }
+
+  private BVC() {
+    this.utils.branch(!this.registers.getOverflow());
+  }
+
+  // ******** NEEDS REFACTORING USING UTILS **********
 
   // private LSR_A() {
-  //   registers.clearNegative();
-  //   const a = registers.getAccumulator();
-  //   a & 0b1 ? registers.setCarry() : registers.clearCarry();
+  //   this.registers.clearNegative();
+  //   const a = this.registers.getAccumulator();
+  //   a & 0b1 ? this.registers.setCarry() : this.registers.clearCarry();
   //   const result = a >> 1;
-  //   registers.setZeroFromValue(result);
-  //   registers.setAccumulator(result);
-  //   registers.incrementProgramCounter();
-  // }
-
-  // private STA_A() {
-  //   registers.incrementProgramCounter();
-  //   Utils.setAbsoluteValue(ram, registers, registers.getAccumulator());
-  //   registers.incrementProgramCounter(2);
-  // }
-
-  // private TXS_I() {
-  //   registers.setStackPointer(registers.getX()).incrementProgramCounter();
-  // }
-
-  // private TXA_I() {
-  //   registers
-  //     .setAccumulator(registers.getX())
-  //     .incrementProgramCounter()
-  //     .setZeroNegativeFlagsFromValue(registers.getAccumulator());
-  // }
-
-  // private TAX_I() {
-  //   registers
-  //     .setX(registers.getAccumulator())
-  //     .incrementProgramCounter()
-  //     .setZeroNegativeFlagsFromValue(registers.getX());
-  // }
-
-  // private TAY_I() {
-  //   registers
-  //     .setY(registers.getAccumulator())
-  //     .incrementProgramCounter()
-  //     .setZeroNegativeFlagsFromValue(registers.getY());
-  // }
-
-  // private BPL_R() {
-  //   registers.incrementProgramCounter();
-  //   if (!registers.getNegative()) {
-  //     const rel = ram.get8signed(registers.getProgramCounter());
-  //     registers.incrementProgramCounter(rel);
-  //   }
-  //   registers.incrementProgramCounter();
-  // }
-
-  // private BCC_R() {
-  //   registers.incrementProgramCounter();
-  //   if (!registers.getCarry()) {
-  //     const rel = ram.get8signed(registers.getProgramCounter());
-  //     registers.incrementProgramCounter(rel);
-  //   }
-  //   registers.incrementProgramCounter();
-  // }
-
-  // private CMP_I() {
-  //   registers.incrementProgramCounter();
-  //   const imediate = ram.get8(registers.getProgramCounter());
-  //   const acum = registers.getAccumulator();
-  //   const result = acum - imediate;
-  //   registers.setZeroNegativeFlagsFromValue(result);
-  //   acum >= imediate ? registers.setCarry() : registers.clearCarry(); // Why?
-  //   registers.incrementProgramCounter();
-  // }
-
-  // private BCS() {
-  //   registers.incrementProgramCounter();
-  //   if (registers.getCarry()) {
-  //     const rel = ram.get8signed(registers.getProgramCounter());
-  //     registers.incrementProgramCounter(rel);
-  //   }
-  //   registers.incrementProgramCounter();
-  // }
-
-  // private BEQ() {
-  //   registers.incrementProgramCounter();
-  //   if (registers.getZero()) {
-  //     const rel = ram.get8signed(registers.getProgramCounter());
-  //     registers.incrementProgramCounter(rel);
-  //   }
-  //   registers.incrementProgramCounter();
-  // }
-
-  // private BNE() {
-  //   registers.incrementProgramCounter();
-  //   if (!registers.getZero()) {
-  //     const rel = ram.get8signed(registers.getProgramCounter());
-  //     registers.incrementProgramCounter(rel);
-  //   }
-  //   registers.incrementProgramCounter();
-  // }
-
-  // private JSR() {
-  //   registers.incrementProgramCounter();
-  //   const jumpAddress = ram.get16(registers.getProgramCounter());
-  //   registers.incrementProgramCounter(2);
-  //   const PC = registers.getProgramCounter() - 1;
-  //   Utils.pushStack(PC, ram, registers);
-  //   registers.setProgramCounter(jumpAddress);
-  // }
-
-  // private JMP_A() {
-  //   registers.incrementProgramCounter();
-  //   const jumpAddress = ram.get16(registers.getProgramCounter());
-  //   registers.setProgramCounter(jumpAddress);
-  // }
-
-  // private JMP_I() {
-  //   registers.incrementProgramCounter();
-  //   const indirect = ram.get16(registers.getProgramCounter());
-  //   const jumpAddress = ram.get16(indirect);
-  //   registers.setProgramCounter(jumpAddress);
-  // }
-
-  // private STA_Z() {
-  //   registers.incrementProgramCounter();
-  //   ram.set8(
-  //     ram.get8(registers.getProgramCounter()),
-  //     registers.getAccumulator()
-  //   );
-  //   registers.incrementProgramCounter();
-  // }
-
-  // private STX_Z() {
-  //   registers.incrementProgramCounter();
-  //   ram.set8(ram.get8(registers.getProgramCounter()), registers.getX());
-  //   registers.incrementProgramCounter();
-  // }
-
-  // private STX_A() {
-  //   registers.incrementProgramCounter();
-  //   Utils.setAbsoluteValue(ram, registers, registers.getX());
-  //   registers.incrementProgramCounter(2);
-  // }
-
-  // private STY_A() {
-  //   registers.incrementProgramCounter();
-  //   Utils.setAbsoluteValue(ram, registers, registers.getY());
-  //   registers.incrementProgramCounter(2);
-  // }
-
-  // private CPX_I() {
-  //   // TODO: Refactor with better understanding (This might be wrong)
-  //   registers.incrementProgramCounter();
-  //   const imediate = ram.get8(registers.getProgramCounter());
-  //   const x = registers.getX();
-  //   const result = x - imediate;
-  //   registers.setZeroNegativeFlagsFromValue(result);
-  //   x >= imediate ? registers.setCarry() : registers.clearCarry(); // Why?
-  //   registers.incrementProgramCounter();
-  // }
-
-  // private CPY_I() {
-  //   // TODO: Refactor with better understanding (This might be wrong)
-  //   registers.incrementProgramCounter();
-  //   const imediate = ram.get8(registers.getProgramCounter());
-  //   const y = registers.getY();
-  //   const result = y - imediate;
-  //   registers.setZeroNegativeFlagsFromValue(result);
-  //   y >= imediate ? registers.setCarry() : registers.clearCarry(); // Why?
-  //   registers.incrementProgramCounter();
-  // }
-
-  // private STA_IY() {
-  //   registers.incrementProgramCounter();
-  //   const immediate = ram.get8(registers.getProgramCounter());
-  //   const indirect = ram.get16(immediate);
-  //   const y = registers.getY();
-  //   const address = indirect + y;
-  //   ram.set8(address, registers.getAccumulator());
-  //   registers.incrementProgramCounter();
-  // }
-
-  // private LDA_IY() {
-  //   registers.incrementProgramCounter();
-  //   const immediate = ram.get8(registers.getProgramCounter());
-  //   const indirect = ram.get16(immediate);
-  //   const y = registers.getY();
-  //   const address = indirect + y;
-  //   registers.setAccumulator(ram.get8(address));
-  //   registers.incrementProgramCounter();
-  // }
-
-  // private RTS() {
-  //   const PC = Utils.pullStack(ram, registers);
-  //   registers.setProgramCounter(PC);
-  //   registers.incrementProgramCounter();
+  //   this.registers.setZeroFromValue(result);
+  //   this.registers.setAccumulator(result);
+  //   this.registers.incrementProgramCounter();
   // }
 
   // private BIT() {
-  //   registers.incrementProgramCounter();
-  //   const memVal = Utils.getAbsoluteValue(ram, registers);
-  //   const and = registers.getAccumulator() & memVal;
-  //   registers.setZeroFromValue(and);
-  //   registers.setNegativeFromValue(memVal);
+  //   this.registers.incrementProgramCounter();
+  //   const memVal = this.utils.getValue(AddressingMode.Absolute);
+  //   const and = this.registers.getAccumulator() & memVal;
+  //   this.registers.setZeroFromValue(and);
+  //   this.registers.setNegativeFromValue(memVal);
   //   ((memVal & 0b01000000) >> 6) & 1
-  //     ? registers.setOverflow()
-  //     : registers.clearOverflow();
-  //   registers.incrementProgramCounter(2);
-  // }
-
-  // private STA_AX() {
-  //   registers.incrementProgramCounter();
-  //   const address = ram.get16(registers.getProgramCounter()) + registers.getX();
-  //   ram.set8(address, registers.getAccumulator());
-  //   registers.incrementProgramCounter(2);
-  // }
-
-  // private STA_AY() {
-  //   registers.incrementProgramCounter();
-  //   const address = ram.get16(registers.getProgramCounter()) + registers.getY();
-  //   ram.set8(address, registers.getAccumulator());
-  //   registers.incrementProgramCounter(2);
-  // }
-
-  // private PHA() {
-  //   Utils.pushStackValue(registers.getAccumulator(), ram, registers);
-  //   registers.incrementProgramCounter();
-  // }
-
-  // private PLA() {
-  //   registers.setAccumulator(Utils.pullStackValue(ram, registers));
-  //   registers.setZeroNegativeFlagsFromValue(registers.getAccumulator());
-  //   registers.incrementProgramCounter();
+  //     ? this.registers.setOverflow()
+  //     : this.registers.clearOverflow();
+  //   this.registers.incrementProgramCounter(2);
   // }
 
   // private ROL_Z() {
   //   // TODO: double check this for accuracy
-  //   registers.incrementProgramCounter();
-  //   const address = ram.get8(registers.getProgramCounter());
-  //   const value = ram.get8(address);
+  //   this.registers.incrementProgramCounter();
+  //   const address = this.ram.get8(this.registers.getProgramCounter());
+  //   const value = this.ram.get8(address);
   //   const newCarry = !!((value >> 7) & 1);
-  //   const oldCarry = +registers.getCarry();
+  //   const oldCarry = +this.registers.getCarry();
   //   const result = ((value & 0x01111111) << 1) | oldCarry;
-  //   ram.set8(address, result);
-  //   newCarry ? registers.setCarry() : registers.clearCarry();
-  //   registers.setZeroNegativeFlagsFromValue(
-  //     Utils.getAbsoluteOffsetValue(ram, registers, registers.getX())
+  //   this.ram.set8(address, result);
+  //   newCarry ? this.registers.setCarry() : this.registers.clearCarry();
+  //   this.registers.setZeroNegativeFlagsFromValue(
+  //     this.utils.getValue(AddressingMode.Absolute_X)
   //   );
-  //   registers.incrementProgramCounter();
+  //   this.registers.incrementProgramCounter();
   // }
 
   // private ASL_A() {
   //   // TODO: double check this for accuracy
-  //   const value = registers.getAccumulator();
+  //   const value = this.registers.getAccumulator();
   //   const newCarry = !!((value >> 7) & 1);
   //   const result = (value << 1) & 0x1111_1111;
-  //   registers.setAccumulator(result);
-  //   newCarry ? registers.setCarry() : registers.clearCarry();
-  //   registers.setZeroNegativeFlagsFromValue(registers.getAccumulator());
-  //   registers.incrementProgramCounter();
+  //   this.registers.setAccumulator(result);
+  //   newCarry ? this.registers.setCarry() : this.registers.clearCarry();
+  //   this.registers.setZeroNegativeFlagsFromValue(
+  //     this.registers.getAccumulator()
+  //   );
+  //   this.registers.incrementProgramCounter();
   // }
 
   // private ROR_AX() {
   //   // TODO: double check this for accuracy
-  //   registers.incrementProgramCounter();
-  //   const value = Utils.getAbsoluteOffsetValue(
-  //     ram,
-  //     registers,
-  //     registers.getX()
-  //   );
+  //   this.registers.incrementProgramCounter();
+  //   const value = this.utils.getValue(AddressingMode.Absolute_X);
   //   const newCarry = !!(value & 1);
-  //   const oldCarry = +registers.getCarry();
+  //   const oldCarry = +this.registers.getCarry();
   //   const result = ((value & 0x11111110) >> 1) | (oldCarry << 7);
-  //   Utils.setAbsoluteOffsetValue(ram, registers, registers.getX(), result);
-  //   newCarry ? registers.setCarry() : registers.clearCarry();
-  //   registers.setZeroNegativeFlagsFromValue(
-  //     Utils.getAbsoluteOffsetValue(ram, registers, registers.getX())
+  //   this.utils.setValue(AddressingMode.Absolute_X, result);
+  //   newCarry ? this.registers.setCarry() : this.registers.clearCarry();
+  //   this.registers.setZeroNegativeFlagsFromValue(
+  //     this.utils.getValue(AddressingMode.Absolute_X)
   //   );
-  //   registers.incrementProgramCounter(2);
+  //   this.registers.incrementProgramCounter(2);
   // }
 
   // private ROL_A() {
   //   // TODO: double check this for accuracy
-  //   const a = registers.getAccumulator();
+  //   const a = this.registers.getAccumulator();
   //   const newCarry = !!((a >> 7) & 1);
-  //   const oldCarry = +registers.getCarry();
+  //   const oldCarry = +this.registers.getCarry();
   //   const result = ((a & 0x01111111) << 1) | oldCarry;
-  //   registers.setAccumulator(result);
-  //   newCarry ? registers.setCarry() : registers.clearCarry();
-  //   registers.setZeroNegativeFlagsFromValue(registers.getAccumulator());
-  //   registers.incrementProgramCounter();
-  // }
-
-  // private SBC() {
-  //   Utils.notImplemented("SBC");
-  // }
-
-  // private NMI() {
-  //   Utils.pushStack(registers.getProgramCounter(), ram, registers);
-  //   Utils.pushStackValue(registers.getStatusRegister(), ram, registers);
-  //   registers.setInteruptDisable();
-  //   registers.setProgramCounter(ram.get16(0xfffa));
-  // }
-
-  // private RTI() {
-  //   const status = Utils.pullStackValue(ram, registers);
-  //   registers.setStatusRegister(status);
-  //   const PC = Utils.pullStack(ram, registers);
-  //   registers.setProgramCounter(PC);
-  // }
-
-  // private ADC_I() {
-  //   registers.incrementProgramCounter();
-  //   const a = registers.getAccumulator();
-  //   const b = Utils.getImmediate(ram, registers);
-  //   const { result, hasCarry6bit, hasCarry7bit } = Utils.bitAdd(
-  //     a,
-  //     b,
-  //     registers.getCarry()
+  //   this.registers.setAccumulator(result);
+  //   newCarry ? this.registers.setCarry() : this.registers.clearCarry();
+  //   this.registers.setZeroNegativeFlagsFromValue(
+  //     this.registers.getAccumulator()
   //   );
-  //   registers.setAccumulator(result);
-  //   registers.setZeroNegativeFlagsFromValue(registers.getAccumulator());
-  //   hasCarry7bit ? registers.setCarry() : registers.clearCarry();
-  //   (hasCarry6bit && !hasCarry7bit) || (!hasCarry6bit && hasCarry7bit)
-  //     ? registers.setOverflow()
-  //     : registers.clearOverflow();
-  //   registers.incrementProgramCounter();
+  //   this.registers.incrementProgramCounter();
   // }
 
-  // private ADC_A() {
-  //   registers.incrementProgramCounter();
-  //   const a = registers.getAccumulator();
-  //   const b = Utils.getAbsoluteValue(ram, registers);
-  //   const { result, hasCarry6bit, hasCarry7bit } = Utils.bitAdd(
-  //     a,
-  //     b,
-  //     registers.getCarry()
-  //   );
-  //   registers.setAccumulator(result);
-  //   registers.setZeroNegativeFlagsFromValue(registers.getAccumulator());
-  //   hasCarry7bit ? registers.setCarry() : registers.clearCarry();
-  //   (hasCarry6bit && !hasCarry7bit) || (!hasCarry6bit && hasCarry7bit)
-  //     ? registers.setOverflow()
-  //     : registers.clearOverflow();
-  //   registers.incrementProgramCounter(2);
-  // }
+  private JSR() {
+    const PC = this.registers.getProgramCounter() + 2;
+    this.utils.pushStack(PC);
+    this.registers.incrementProgramCounter();
+    const jumpAddress = this.ram.get16(this.registers.getProgramCounter());
+    this.registers.setProgramCounter(jumpAddress);
+  }
 
-  // private ADC_AY() {
-  //   registers.incrementProgramCounter();
-  //   const a = registers.getAccumulator();
-  //   const b = Utils.getAbsoluteOffsetValue(ram, registers, registers.getY());
-  //   const { result, hasCarry6bit, hasCarry7bit } = Utils.bitAdd(
-  //     a,
-  //     b,
-  //     registers.getCarry()
-  //   );
-  //   registers.setAccumulator(result);
-  //   registers.setZeroNegativeFlagsFromValue(registers.getAccumulator());
-  //   hasCarry7bit ? registers.setCarry() : registers.clearCarry();
-  //   (hasCarry6bit && !hasCarry7bit) || (!hasCarry6bit && hasCarry7bit)
-  //     ? registers.setOverflow()
-  //     : registers.clearOverflow();
-  //   registers.incrementProgramCounter(2);
-  // }
+  private JMP_A() {
+    this.registers.incrementProgramCounter();
+    const jumpAddress = this.ram.get16(this.registers.getProgramCounter());
+    this.registers.setProgramCounter(jumpAddress);
+  }
 
-  // private SBC_AY() {
-  //   // essentially a ADC_AY with ~b
-  //   registers.incrementProgramCounter();
-  //   const a = registers.getAccumulator();
-  //   const b = Utils.getAbsoluteOffsetValue(ram, registers, registers.getY());
-  //   const { result, hasCarry6bit, hasCarry7bit } = Utils.bitAdd(
-  //     a,
-  //     ~b,
-  //     registers.getCarry()
-  //   );
-  //   registers.setAccumulator(result);
-  //   registers.setZeroNegativeFlagsFromValue(registers.getAccumulator());
-  //   hasCarry7bit ? registers.setCarry() : registers.clearCarry();
-  //   (hasCarry6bit && !hasCarry7bit) || (!hasCarry6bit && hasCarry7bit)
-  //     ? registers.setOverflow()
-  //     : registers.clearOverflow();
-  //   registers.incrementProgramCounter(2);
-  // }
+  private JMP_I() {
+    this.registers.incrementProgramCounter();
+    const indirect = this.ram.get16(this.registers.getProgramCounter());
+    const jumpAddress = this.ram.get16(indirect);
+    this.registers.setProgramCounter(jumpAddress);
+  }
+
+  private RTS() {
+    const PC = this.utils.pullStack();
+    this.registers.setProgramCounter(PC);
+    this.registers.incrementProgramCounter();
+  }
+
+  private NMI() {
+    this.utils.pushStack(this.registers.getProgramCounter());
+    this.utils.pushStackValue(this.registers.getStatusRegister());
+    this.registers.setInteruptDisable();
+    this.registers.setProgramCounter(this.ram.get16(0xfffa));
+  }
+
+  private RTI() {
+    const status = this.utils.pullStackValue();
+    this.registers.setStatusRegister(status);
+    const PC = this.utils.pullStack();
+    this.registers.setProgramCounter(PC);
+  }
+
+  private NOP() {
+    this.registers.incrementProgramCounter();
+  }
+}
+
+enum ArithmeticType {
+  Add,
+  Subtract,
 }
 
 enum StepDirection {
@@ -794,10 +836,10 @@ enum DataRegister {
   X,
   Y,
   A,
+  STACK_POINTER,
 }
 
 enum AddressingMode {
-  Implied,
   Immediate,
   Zero_Page,
   Zero_Page_Offset_X,
@@ -807,6 +849,7 @@ enum AddressingMode {
   Absolute_Y,
   Indirect_Offset_X,
   Indirect_Offset_Y,
+  Relative,
 }
 
 enum LogicalOperationType {
@@ -816,7 +859,6 @@ enum LogicalOperationType {
 }
 
 const POST_EXECUTION_PC_STEPS = {
-  [AddressingMode.Implied]: 0,
   [AddressingMode.Immediate]: 1,
   [AddressingMode.Zero_Page]: 1,
   [AddressingMode.Zero_Page_Offset_X]: 1,
@@ -826,6 +868,7 @@ const POST_EXECUTION_PC_STEPS = {
   [AddressingMode.Absolute_Y]: 2,
   [AddressingMode.Indirect_Offset_X]: 1,
   [AddressingMode.Indirect_Offset_Y]: 1,
+  [AddressingMode.Relative]: 1,
 } as const;
 
 // Util Functions
@@ -864,10 +907,7 @@ class Utils {
     return this.ram.get8((0x10 << 8) + this.registers.getStackPointer());
   }
 
-  public logicalOperation(
-    type: LogicalOperationType,
-    mode: Exclude<AddressingMode, AddressingMode.Implied>
-  ) {
+  public logicalOperation(type: LogicalOperationType, mode: AddressingMode) {
     this.incPC();
     const value = this.getValue(mode);
     const result = this.doLogic(
@@ -916,6 +956,50 @@ class Utils {
     this.postOpIncPC(mode);
   }
 
+  public arithmetic(mode: AddressingMode, type: ArithmeticType) {
+    this.incPC();
+    const a = this.getRegisterValue(DataRegister.A);
+    const m = this.getValue(mode);
+    const mCompliment = ~m + 1;
+    const c = this.getFlagValue(STATUS_FLAGS.CARRY);
+    const b = !c;
+    const { result, carry, overflow } = Utils.bitAdd(
+      a,
+      type === ArithmeticType.Add ? m : mCompliment,
+      type === ArithmeticType.Add ? c : b
+    );
+    this.setRegisterValue(DataRegister.A, result);
+    this.setNZ(this.getRegisterValue(DataRegister.A));
+    carry
+      ? this.setFlagValue(STATUS_FLAGS.CARRY)
+      : this.clearFlagValue(STATUS_FLAGS.CARRY);
+    overflow
+      ? this.setFlagValue(STATUS_FLAGS.OVERFLOW)
+      : this.clearFlagValue(STATUS_FLAGS.OVERFLOW);
+    this.postOpIncPC(mode);
+  }
+
+  public compare(mode: AddressingMode, reg: DataRegister) {
+    this.incPC();
+    const r = this.getRegisterValue(reg);
+    const m = ~this.getValue(mode) + 1;
+    const { result, carry } = Utils.bitAdd(r, m, false);
+    this.setNZ(result);
+    carry
+      ? this.setFlagValue(STATUS_FLAGS.CARRY)
+      : this.clearFlagValue(STATUS_FLAGS.CARRY);
+    this.postOpIncPC(mode);
+  }
+
+  public branch(condition: boolean) {
+    this.incPC();
+    const rel = this.getValue(AddressingMode.Relative);
+    this.postOpIncPC(AddressingMode.Relative);
+    if (condition) {
+      this.incPC(rel);
+    }
+  }
+
   public loadDataRegister(reg: DataRegister, mode: AddressingMode) {
     this.incPC();
     this.setRegisterValue(reg, this.getValue(mode));
@@ -923,6 +1007,19 @@ class Utils {
     this.postOpIncPC(mode);
   }
 
+  public storeDataRegister(reg: DataRegister, mode: AddressingMode) {
+    this.incPC();
+    this.setValue(mode, this.getRegisterValue(reg));
+    this.postOpIncPC(mode);
+  }
+
+  public transferDataRegister(from: DataRegister, to: DataRegister) {
+    this.incPC();
+    this.setRegisterValue(to, this.getRegisterValue(from));
+    to !== DataRegister.STACK_POINTER && this.setNZ(this.getRegisterValue(to));
+  }
+
+  // TODO: make private after refactor
   public getValue(addressingMode: AddressingMode) {
     switch (addressingMode) {
       case AddressingMode.Immediate:
@@ -943,11 +1040,12 @@ class Utils {
         return this.getIndirectOffsetXValue();
       case AddressingMode.Indirect_Offset_Y:
         return this.getIndirectOffsetYValue();
-      case AddressingMode.Implied:
-        throw new Error("do not use Implied Addressing Mode");
+      case AddressingMode.Relative:
+        return this.getRelativeValue();
     }
   }
 
+  // TODO: make private after refactor
   public setValue(addressingMode: AddressingMode, val: number) {
     switch (addressingMode) {
       case AddressingMode.Zero_Page:
@@ -966,12 +1064,12 @@ class Utils {
         return this.setIndirectOffsetXValue(val);
       case AddressingMode.Indirect_Offset_Y:
         return this.setIndirectOffsetYValue(val);
-      case AddressingMode.Implied:
-        throw new Error("do not use Implied Addressing Mode");
+      case AddressingMode.Relative:
+        throw new Error("can not set Relative value");
     }
   }
 
-  public getRegisterValue(register: DataRegister) {
+  private getRegisterValue(register: DataRegister) {
     switch (register) {
       case DataRegister.X:
         return this.registers.getX();
@@ -979,10 +1077,12 @@ class Utils {
         return this.registers.getY();
       case DataRegister.A:
         return this.registers.getAccumulator();
+      case DataRegister.STACK_POINTER:
+        return this.registers.getStackPointer();
     }
   }
 
-  public setRegisterValue(register: DataRegister, val: number) {
+  private setRegisterValue(register: DataRegister, val: number) {
     switch (register) {
       case DataRegister.X:
         return this.registers.setX(val);
@@ -990,17 +1090,76 @@ class Utils {
         return this.registers.setY(val);
       case DataRegister.A:
         return this.registers.setAccumulator(val);
+      case DataRegister.STACK_POINTER:
+        return this.registers.setStackPointer(val);
     }
   }
 
-  public setNZ(val: number) {
+  private getFlagValue(flag: STATUS_FLAGS) {
+    switch (flag) {
+      case STATUS_FLAGS.CARRY:
+        return this.registers.getCarry();
+      case STATUS_FLAGS.DECIMAL:
+        return this.registers.getDecimal();
+      case STATUS_FLAGS.INTERUPT_DISABLE:
+        return this.registers.getInteruptDisable();
+      case STATUS_FLAGS.NEGATIVE:
+        return this.registers.getNegative();
+      case STATUS_FLAGS.OVERFLOW:
+        return this.registers.getOverflow();
+      case STATUS_FLAGS.ZERO:
+        return this.registers.getZero();
+      default:
+        throw new Error("can get no_effect flag");
+    }
+  }
+
+  private setFlagValue(flag: STATUS_FLAGS) {
+    switch (flag) {
+      case STATUS_FLAGS.CARRY:
+        return this.registers.setCarry();
+      case STATUS_FLAGS.DECIMAL:
+        return this.registers.setDecimal();
+      case STATUS_FLAGS.INTERUPT_DISABLE:
+        return this.registers.setInteruptDisable();
+      case STATUS_FLAGS.NEGATIVE:
+        return this.registers.setNegative();
+      case STATUS_FLAGS.OVERFLOW:
+        return this.registers.setOverflow();
+      case STATUS_FLAGS.ZERO:
+        return this.registers.setZero();
+      default:
+        throw new Error("can get no_effect flag");
+    }
+  }
+
+  private clearFlagValue(flag: STATUS_FLAGS) {
+    switch (flag) {
+      case STATUS_FLAGS.CARRY:
+        return this.registers.clearCarry();
+      case STATUS_FLAGS.DECIMAL:
+        return this.registers.clearDecimal();
+      case STATUS_FLAGS.INTERUPT_DISABLE:
+        return this.registers.clearInteruptDisable();
+      case STATUS_FLAGS.NEGATIVE:
+        return this.registers.clearNegative();
+      case STATUS_FLAGS.OVERFLOW:
+        return this.registers.clearOverflow();
+      case STATUS_FLAGS.ZERO:
+        return this.registers.clearZero();
+      default:
+        throw new Error("can get no_effect flag");
+    }
+  }
+
+  private setNZ(val: number) {
     this.registers.setZeroNegativeFlagsFromValue(val);
   }
 
-  public incPC(val?: number) {
+  private incPC(val?: number) {
     this.registers.incrementProgramCounter(val);
   }
-  public postOpIncPC(mode: AddressingMode) {
+  private postOpIncPC(mode: AddressingMode) {
     this.registers.incrementProgramCounter(POST_EXECUTION_PC_STEPS[mode]);
   }
 
@@ -1098,30 +1257,34 @@ class Utils {
     return this.ram.set8(address + this.getRegisterValue(DataRegister.Y), val);
   }
 
+  private getRelativeValue() {
+    return this.ram.get8signed(this.registers.getProgramCounter());
+  }
+
   static notImplemented(opcode: string) {
     throw new TypeError("Not implementation for " + opcode);
   }
 
   static bitAdd(a: number, b: number, c: boolean) {
     let result = 0;
-    let hasCarry6bit = false;
-    let hasCarry7bit = false;
     let carry = c ? 1 : 0;
+    let carry6 = 0;
     for (let bit = 0; bit < 8; bit++) {
       const aBit = Utils.getBit(a, bit);
       const bBit = Utils.getBit(b, bit);
       const bitResult = aBit + bBit + carry;
       carry = bitResult > 1 ? 1 : 0;
-      if (carry && bit === 6) {
-        hasCarry6bit = true;
-      }
-      if (carry && bit === 7) {
-        hasCarry7bit = true;
-      }
       result += bitResult % 2 << bit;
+      if (bit === 6) {
+        carry6 = carry;
+      }
     }
 
-    return { result, hasCarry6bit, hasCarry7bit };
+    return {
+      result,
+      carry: !!carry,
+      overflow: !!(carry ^ carry6),
+    };
   }
 
   private static getBit(a: number, bit: number) {

@@ -24,7 +24,8 @@ class CPU {
   constructor(ram: RAM) {
     this.ram = ram;
     this.init();
-    this.executor = new Execute(this.ram, this.registers).execute;
+    const e = new Execute(this.ram, this.registers);
+    this.executor = new Execute(this.ram, this.registers).execute.bind(e);
   }
 
   init() {

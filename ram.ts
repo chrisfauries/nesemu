@@ -110,8 +110,8 @@ class RAM {
   }
 
   // TESTING
-  public getVRAMdump() {
-    return Array.from(this.vRam);
+  public setvRam(address: number, val:number) {
+    this.vRam[address] = val;
   }
 }
 

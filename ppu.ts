@@ -22,6 +22,13 @@ class PPU {
     this.PPU_MASK = this.ram.getPPU_MASK();
     this.PPU_STATUS = this.ram.getPPU_STATUS();
     this.setCHRROM();
+    this.setFakevRamDEMO();
+  }
+
+  setFakevRamDEMO() {
+    for (let i = 0; i < 960; i++) {
+      this.ram.setvRam(0x2000 + i, 0x0b);
+    }
   }
 
   tick() {
@@ -35,21 +42,23 @@ class PPU {
     }
 
     if (this.scanline >= 0 && this.scanline <= 239) {
-      if (this.cycle === 0) {
-      } else if (this.cycle % 8 === 1) {
+      // if (this.cycle === 0) {
+      // } else
+      if (this.cycle % 8 === 0) {
         const baseTableAddress = this.getBaseNameTableAddress();
         const tableEntryAddress =
           baseTableAddress +
-          Math.floor((256 * this.scanline + this.cycle - 1) / 8);
-        const tableValue = this.ram.get8vRam(tableEntryAddress);
+          32 * Math.floor(this.scanline / 8) +
+          Math.floor(this.cycle / 8);
+          const tableValue = this.ram.get8vRam(tableEntryAddress);
         const bgSpite = this[
           this.getCHRROMbackgroundSideRight() ? "CHRROM_RIGHT" : "CHRROM_LEFT"
         ].subarray(16 * tableValue, 16 + 16 * tableValue);
         this.tile = new Tile(bgSpite);
-        const pixel = this.tile.tile[this.scanline % 8][(this.cycle % 8) - 1];
+        const pixel = this.tile.tile[this.scanline % 8][this.cycle % 8];
         this.renderPixel(pixel);
       } else {
-        const pixel = this.tile?.tile[this.scanline % 8][(this.cycle - 1) % 8];
+        const pixel = this.tile?.tile[this.scanline % 8][this.cycle % 8];
         if (pixel === undefined) {
           throw new Error("no pixel data");
         }
@@ -58,9 +67,9 @@ class PPU {
     }
     if (this.scanline === 240 && this.cycle === 0) {
       console.log("post-render line");
-      console.log("Control: ", this.ram.getPPU_CTRL());
-      console.log("Mask: ", this.ram.getPPU_MASK());
-      console.log("Status: ", this.ram.getPPU_STATUS());
+      // console.log("Control: ", this.ram.getPPU_CTRL());
+      // console.log("Mask: ", this.ram.getPPU_MASK());
+      // console.log("Status: ", this.ram.getPPU_STATUS());
     }
     if (this.scanline == 241 && this.cycle === 0) {
       console.log("V Blank");
@@ -69,7 +78,7 @@ class PPU {
     if (this.scanline === 261 && this.cycle === 0) {
       console.log("pre-render line");
       this.clearVBL_FLAG();
-      console.log("vram address:", this.ram.vRamAddress);
+      // console.log("vram address:", this.ram.vRamAddress);
     }
 
     this.cycle++;
@@ -86,7 +95,7 @@ class PPU {
     // Opacity
     data.data[3] = !(val & 1) ? 255 : 0;
 
-    this.ctx.putImageData(data, this.scanline, this.cycle - 1);
+    this.ctx.putImageData(data,this.cycle, this.scanline);
   }
 
   getBaseNameTableAddress() {

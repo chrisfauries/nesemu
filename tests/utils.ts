@@ -13,6 +13,7 @@ export interface TestRegisters {
   y?: number;
   a?: number;
   pc?: number;
+  stackPointer?: number;
   carry?: boolean;
   decimal?: boolean;
   overflow?: boolean;
@@ -51,6 +52,9 @@ export const getRegisters = (init?: TestRegisters) => {
   "a" in init && init.a !== undefined && reg.setAccumulator(init.a);
   "x" in init && init.x !== undefined && reg.setX(init.x);
   "y" in init && init.y !== undefined && reg.setY(init.y);
+  "stackPointer" in init &&
+    init.stackPointer !== undefined &&
+    reg.setStackPointer(init.stackPointer);
   "pc" in init && init.pc !== undefined && reg.setProgramCounter(init.pc);
   "carry" in init && init.carry !== undefined && init.carry
     ? reg.setCarry()
@@ -82,7 +86,10 @@ interface Flags {
 
 export const checkFlags = (
   registers: Registers,
-  flags: Pick<TestRegisters, "carry" | "overflow" | "zero" | "negative" | "decimal" | "interrupt">
+  flags: Pick<
+    TestRegisters,
+    "carry" | "overflow" | "zero" | "negative" | "decimal" | "interrupt"
+  >
 ) => {
   if ("carry" in flags) {
     expect(registers.getCarry()).toEqual(flags.carry);
@@ -111,7 +118,7 @@ export const checkFlags = (
 
 export const checkReg = (
   registers: Registers,
-  testRegisters: Pick<TestRegisters, "a" | "y" | "x" | "pc">
+  testRegisters: Pick<TestRegisters, "a" | "y" | "x" | "pc" | "stackPointer">
 ) => {
   if ("x" in testRegisters) {
     expect(registers.getX()).toEqual(testRegisters.x);
@@ -127,6 +134,16 @@ export const checkReg = (
 
   if ("pc" in testRegisters) {
     expect(registers.getProgramCounter()).toEqual(testRegisters.pc);
+  }
+
+  if ("stackPointer" in testRegisters) {
+    expect(registers.getStackPointer()).toEqual(testRegisters.stackPointer);
+  }
+};
+
+export const checkRam = (ram: RAM, entry: InitRAM) => {
+  for (let address in entry) {
+    expect(ram.get8(parseInt(address))).toEqual(entry[address]);
   }
 };
 

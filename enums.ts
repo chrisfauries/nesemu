@@ -165,47 +165,154 @@ export enum CPU_INSTRUCTION {
 
   // Store Register Instructions
 
-  // Transfer Register Instructions
-
-  /** Logical Shift Right - Accumulator (1 byte / 2 cycles) */
-  LSR_A = 0x4a,
-  /** Add With Carry - Immediate (2 bytes / 2 cycles) */
-  ADC_I = 0x69,
-  /** Add With Carry - Absolute (3 bytes / 4 cycles) */
-  ADC_A = 0x6d,
-  /** Add With Carry - Absolute Y (3 bytes / 4-5 cycles) */
-  ADC_AY = 0x79,
+  /** Store Accumulator - Zero Page (2 bytes / 3 cycles) */
+  STA_Z = 0x85,
+  /** Store Accumulator - Zero Page X (2 bytes / 4 cycles) */
+  STA_ZX = 0x95,
   /** Store Accumulator - Absolute (3 bytes / 4 cycles) */
   STA_A = 0x8d,
   /** Store Accumulator - Absolute X (3 bytes / 5 cycles) */
   STA_AX = 0x9d,
   /** Store Accumulator - Absolute Y (3 bytes / 5 cycles) */
   STA_AY = 0x99,
+  /** Store Accumulator - Indirect X (2 bytes / 6 cycles) */
+  STA_IX = 0x81,
   /** Store Accumulator - Indirect Y (2 bytes / 6 cycles) */
   STA_IY = 0x91,
-  /** Store Accumulator - Zero Page (2 bytes / 3 cycles) */
-  STA_Z = 0x85,
+  /** Store X Register - Zero Page (2 bytes / 3 cycles) */
+  STX_Z = 0x86,
+  /** Store X Register - Zero Page Y (2 bytes / 4 cycles) */
+  STX_ZY = 0x96,
+  /** Store X Register - Absolute (3 bytes / 4 cycles) */
+  STX_A = 0x8e,
+  /** Store Y Register - Absolute (2 bytes / 3 cycles) */
+  STY_Z = 0x84,
+  /** Store Y Register - Absolute (2 bytes / 4 cycles) */
+  STY_ZX = 0x94,
+  /** Store Y Register - Absolute (3 bytes / 4 cycles) */
+  STY_A = 0x8c,
 
-  /** Transfer X to Stack Pointer - Implied (1 byte / 2 cycles) */
-  TXS_I = 0x9a,
-  /** Transfer X to Accumulator - Implied (1 byte / 2 cycles) */
-  TXA_I = 0x8a,
+  // Transfer Register Instructions
+
   /** Transfer Accumulator to X - Implied (1 byte / 2 cycles) */
-  TAX_I = 0xaa,
+  TAX = 0xaa,
   /** Transfer Accumulator to Y - Implied (1 byte / 2 cycles) */
-  TAY_I = 0xa8,
-  /** BPL - Branch if Positive - Relative (2 bytes / 2-3 cycles) */
-  BPL_R = 0x10,
+  TAY = 0xa8,
+  /** Transfer Stack Pointer to X - Implied (1 byte / 2 cycles) */
+  TSX = 0xba,
+  /** Transfer X to Accumulator - Implied (1 byte / 2 cycles) */
+  TXA = 0x8a,
+  /** Transfer X to Stack Pointer - Implied (1 byte / 2 cycles) */
+  TXS = 0x9a,
+  /** Transfer Y to Accumulator - Implied (1 byte / 2 cycles) */
+  TYA = 0x98,
+
+  // Arithmetic Instructions
+
+  /** Add With Carry - Immediate (2 bytes / 2 cycles) */
+  ADC_I = 0x69,
+  /** Add With Carry - Zero Page (2 bytes / 3 cycles) */
+  ADC_Z = 0x65,
+  /** Add With Carry - Zero Page X (2 bytes / 4 cycles) */
+  ADC_ZX = 0x75,
+  /** Add With Carry - Absolute (3 bytes / 4 cycles) */
+  ADC_A = 0x6d,
+  /** Add With Carry - Absolute X (3 bytes / 4-5 cycles) */
+  ADC_AX = 0x7d,
+  /** Add With Carry - Absolute Y (3 bytes / 4-5 cycles) */
+  ADC_AY = 0x79,
+  /** Add With Carry - Indirect X (2 bytes / 6 cycles) */
+  ADC_IX = 0x61,
+  /** Add With Carry - Indirect Y (2 bytes / 5-6 cycles) */
+  ADC_IY = 0x71,
+  /** Subtract With Carry - Immediate (2 bytes / 2 cycles) */
+  SBC_I = 0xe9,
+  /** Subtract With Carry - Zero Page (2 bytes / 3 cycles) */
+  SBC_Z = 0xe5,
+  /** Subtract With Carry - Zero Page X (2 bytes / 4 cycles) */
+  SBC_ZX = 0xf5,
+  /** Subtract With Carry - Absolute (3 bytes / 4 cycles) */
+  SBC_A = 0xed,
+  /** Subtract With Carry - Absolute X (3 bytes / 4-5 cycles) */
+  SBC_AX = 0xfd,
+  /** Subtract With Carry - Absolute Y (3 bytes / 4-5 cycles) */
+  SBC_AY = 0xf9,
+  /** Subtract With Carry - Indirect X (2 bytes / 6 cycles) */
+  SBC_IX = 0xe1,
+  /** Subtract With Carry - Indirect Y (2 bytes / 5-6 cycles) */
+  SBC_IY = 0xf1,
+
+  // Comparison Instructions
 
   /** Compare - Immediate (2 bytes / 2 cycles) */
   CMP_I = 0xc9,
-  /** Branch If Carry Set - Relative (2 byte / 2-4 cycles) */
-  BCS = 0xb0,
+  /** Compare - Zero Page (2 bytes / 3 cycles) */
+  CMP_Z = 0xc5,
+  /** Compare - Zero Page X (2 bytes / 4 cycles) */
+  CMP_ZX = 0xd5,
+  /** Compare - Absolute (3 bytes / 4 cycles) */
+  CMP_A = 0xcd,
+  /** Compare - Absolute X (3 bytes / 5 cycles) */
+  CMP_AX = 0xdd,
+  /** Compare - Absolute Y (3 bytes / 5 cycles) */
+  CMP_AY = 0xd9,
+  /** Compare - Indirect X (2 bytes / 6 cycles) */
+  CMP_IX = 0xc1,
+  /** Compare - Indirect Y (2 bytes / 6 cycles) */
+  CMP_IY = 0xd1,
+  /** Compare X - Immediate (2 bytes / 2 cycles) */
+  CPX_I = 0xe0,
+  /** Compare X - Zero Page (2 bytes / 3 cycles) */
+  CPX_Z = 0xe4,
+  /** Compare X - Absolute (3 bytes / 4 cycles) */
+  CPX_A = 0xec,
+  /** Compare Y - Immediate (2 bytes / 2 cycles) */
+  CPY_I = 0xc0,
+  /** Compare Y - Zero Page (2 bytes / 3 cycles) */
+  CPY_Z = 0xc4,
+  /** Compare Y - Absolute (3 bytes / 4 cycles) */
+  CPY_A = 0xcc,
 
-  /** Branch if Equal - (2 bytes / 2-4 cycles) */
+  // Stack Register Instructions
+
+  /** Push Accumulator (1 byte / 3 cycles) */
+  PHA = 0x48,
+  /** Push Status Register (1 byte / 3 cycles) */
+  PHP = 0x08,
+  /** Pull Accumulator (1 byte / 4 cycles) */
+  PLA = 0x68,
+  /** Pull Status Register (1 byte / 4 cycles) */
+  PLP = 0x28,
+
+  // Branch Register Instructions
+
+  /** Branch if Carry Clear  (2 bytes / 2-4 cycles) */
+  BCC = 0x90,
+  /** Branch if Carry Set (2 bytes / 2-4 cycles) */
+  BCS = 0xb0,
+  /** Branch if Equal (2 bytes / 2-4 cycles) */
   BEQ = 0xf0,
-  /** Branch if Not Equal - (2 bytes / 2-4 cycles) */
+  /** Branch if Not Equal (2 bytes / 2-4 cycles) */
   BNE = 0xd0,
+  /** Branch if Minus (2 bytes / 2-4 cycles) */
+  BMI = 0x30,
+  /** Branch if Positive (2 bytes / 2-4 cycles) */
+  BPL = 0x10,
+  /** Branch if Overflow Clear (2 bytes / 2-4 cycles) */
+  BVC = 0x50,
+  /** Branch if Positive (2 bytes / 2-4 cycles) */
+  BVS = 0x70,
+
+  // Shift & Rotate Instructions
+
+  // Jump Instructions
+
+  // Interrupt Instructions
+
+  // Other Instructions
+
+  /** Logical Shift Right - Accumulator (1 byte / 2 cycles) */
+  LSR_A = 0x4a,
   /** Jump to Subroutine - (3 bytes / 6 cycles) */
   JSR = 0x20,
   /** Jump - Absolute (3 bytes / 3 cycles) */
@@ -214,25 +321,8 @@ export enum CPU_INSTRUCTION {
   JMP_I = 0x6c,
   /** Return from Subroutine - (1 byte / 6 cycles) */
   RTS = 0x60,
-  /** Store X Register - Zero Page (2 bytes / 3 cycles) */
-  STX_Z = 0x86,
-  /** Store X Register - Absolute (3 bytes / 4 cycles) */
-  STX_A = 0x8e,
-  /** Store Y Register - Absolute (3 bytes / 4 cycles) */
-  STY_A = 0x8c,
-  /** Compare X Register - Immediate (2 bytes / 2 cycles) */
-  CPX_I = 0xe0,
-  /** Compare Y Register - Immediate (2 bytes / 2 cycles) */
-  CPY_I = 0xc0,
   /** Bit Test - (3 bytes / 4 cycles) */
   BIT = 0x2c,
-
-  /** Push Accumulator - (1 byte / 3 cycles) */
-  PHA = 0x48,
-  /** Pull Accumulator - (1 byte / 4 cycles) */
-  PLA = 0x68,
-  /** Subtract with Carry - Absolute Y (1 byte / 2 cycles) */
-  SBC_AY = 0xf9,
   /** Arithmetic Shift Left - Accumulator (1 byte / 2 cycles) */
   ASL_A = 0x0a,
   /** Rotate left - Zero Page (2 byte / 5 cycles) */
@@ -247,8 +337,6 @@ export enum CPU_INSTRUCTION {
   NMI = 0xfffa,
   /** Return from Interrupt - (1 byte / 6? cycles) */
   RTI = 0x40,
-  /** Branch if Carry Clear - Relative (2 bytes / 2-4 cycles) */
-  BCC_R = 0x90,
 }
 
 export const CPU_INSTRUCTION_CYCLES: {
@@ -321,46 +409,86 @@ export const CPU_INSTRUCTION_CYCLES: {
   LDY_A: 4,
   LDY_AX: 5,
   // Store Register Instructions
-
-  BCC_R: 4,
-  LSR_A: 2,
+  STA_Z: 3,
+  STA_ZX: 4,
   STA_A: 4,
   STA_AX: 5,
   STA_AY: 5,
+  STA_IX: 6,
   STA_IY: 6,
-  TXS_I: 2,
-  TXA_I: 2,
-  TAX_I: 2,
-  TAY_I: 2,
-  BPL_R: 3,
+  STX_Z: 3,
+  STX_ZY: 4,
+  STX_A: 4,
+  STY_Z: 3,
+  STY_ZX: 4,
+  STY_A: 4,
+  // Transfer Register Instructions
+  TAX: 2,
+  TAY: 2,
+  TSX: 2,
+  TXA: 2,
+  TXS: 2,
+  TYA: 2,
+  // Arithmetic Register Instructions
+  ADC_I: 2,
+  ADC_Z: 3,
+  ADC_ZX: 4,
+  ADC_A: 4,
+  ADC_AX: 5,
+  ADC_AY: 5,
+  ADC_IX: 6,
+  ADC_IY: 6,
+  SBC_I: 2,
+  SBC_Z: 3,
+  SBC_ZX: 4,
+  SBC_A: 4,
+  SBC_AX: 5,
+  SBC_AY: 5,
+  SBC_IX: 6,
+  SBC_IY: 6,
+  // Comparison Instructions
   CMP_I: 2,
+  CMP_Z: 2,
+  CMP_ZX: 2,
+  CMP_A: 3,
+  CMP_AX: 3,
+  CMP_AY: 3,
+  CMP_IX: 2,
+  CMP_IY: 2,
+  CPX_I: 2,
+  CPX_Z: 3,
+  CPX_A: 4,
+  CPY_I: 2,
+  CPY_Z: 3,
+  CPY_A: 4,
+  // Stack Register Instructions
+  PHA: 3,
+  PHP: 4,
+  PLA: 3,
+  PLP: 4,
+  // Branch Instructions
+  BCC: 4,
   BCS: 4,
   BEQ: 4,
   BNE: 4,
+  BMI: 4,
+  BPL: 4,
+  BVC: 4,
+  BVS: 4,
+
+  LSR_A: 2,
   JSR: 6,
   JMP_A: 3,
   JMP_I: 5,
   RTS: 6,
-  STA_Z: 3,
-  STX_Z: 3,
-  STX_A: 4,
-  STY_A: 4,
-  CPX_I: 2,
-  CPY_I: 2,
   BIT: 4,
   NOP: 2,
-  PHA: 3,
-  PLA: 3,
   ROL_A: 2,
   ROL_Z: 5,
-  SBC_AY: 5,
   ROR_AX: 7,
   ASL_A: 2,
   NMI: 6,
   RTI: 6,
-  ADC_I: 2,
-  ADC_A: 4,
-  ADC_AY: 5,
 } as const;
 
 export enum STATUS_FLAGS {
