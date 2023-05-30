@@ -2,6 +2,7 @@ import CPU from "./cpu";
 import PPU from "./ppu";
 
 class Clock {
+  private slowClock = false;
   private TICKS_PER_FRAME = 89342;
   private isRunning = false;
   private frameCount = 0;
@@ -75,9 +76,14 @@ class Clock {
   }
 
   private queueNextFrame() {
-    window.requestAnimationFrame(() => {
-      this.run();
-    });
+    if (this.slowClock) {
+      setTimeout(() => this.run(), 200)
+    } else {
+      window.requestAnimationFrame(() => {
+        this.run();
+      });
+
+    }
   }
 }
 

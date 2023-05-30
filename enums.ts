@@ -305,14 +305,49 @@ export enum CPU_INSTRUCTION {
 
   // Shift & Rotate Instructions
 
+  /** Arithmetic Shift Left - Accumulator (1 byte / 2 cycles) */
+  ASL_ACC = 0x0a,
+  /** Arithmetic Shift Left - Zero Page (2 bytes / 5 cycles) */
+  ASL_Z = 0x06,
+  /** Arithmetic Shift Left - Zero Page X (2 bytes / 6 cycles) */
+  ASL_ZX = 0x16,
+  /** Arithmetic Shift Left - Absolute (3 bytes / 6 cycles) */
+  ASL_A = 0x0e,
+  /** Arithmetic Shift Left - Absolute X (3 bytes / 7 cycles) */
+  ASL_AX = 0x1e,
+  /** Logical Shift Right - Accumulator (1 byte / 2 cycles) */
+  LSR_ACC = 0x4a,
+  /** Logical Shift Right - Zero Page (2 bytes / 5 cycles) */
+  LSR_Z = 0x46,
+  /** Logical Shift Right - Zero Page X (2 bytes / 6 cycles) */
+  LSR_ZX = 0x56,
+  /** Logical Shift Right - Absolute (3 bytes / 6 cycles) */
+  LSR_A = 0x4e,
+  /** Logical Shift Right - Absolute X (3 bytes / 7 cycles) */
+  LSR_AX = 0x5e,
+  /** Rotate Left - Accumulator (1 byte / 2 cycles) */
+  ROL_ACC = 0x2a,
+  /** Rotate Left - Zero Page (2 bytes / 5 cycles) */
+  ROL_Z = 0x26,
+  /** Rotate Left - Zero Page X (2 bytes / 6 cycles) */
+  ROL_ZX = 0x36,
+  /** Rotate Left - Absolute (3 bytes / 6 cycles) */
+  ROL_A = 0x2e,
+  /** Rotate Left - Absolute X (3 bytes / 7 cycles) */
+  ROL_AX = 0x3e,
+  /** Rotate Right - Accumulator (1 byte / 2 cycles) */
+  ROR_ACC = 0x6a,
+  /** Rotate Right - Zero Page (2 bytes / 5 cycles) */
+  ROR_Z = 0x66,
+  /** Rotate Right - Zero Page X (2 bytes / 6 cycles) */
+  ROR_ZX = 0x76,
+  /** Rotate Right - Absolute (3 bytes / 6 cycles) */
+  ROR_A = 0x6e,
+  /** Rotate Right - Absolute X (3 bytes / 7 cycles) */
+  ROR_AX = 0x7e,
+
   // Jump Instructions
 
-  // Interrupt Instructions
-
-  // Other Instructions
-
-  /** Logical Shift Right - Accumulator (1 byte / 2 cycles) */
-  LSR_A = 0x4a,
   /** Jump to Subroutine - (3 bytes / 6 cycles) */
   JSR = 0x20,
   /** Jump - Absolute (3 bytes / 3 cycles) */
@@ -321,22 +356,76 @@ export enum CPU_INSTRUCTION {
   JMP_I = 0x6c,
   /** Return from Subroutine - (1 byte / 6 cycles) */
   RTS = 0x60,
-  /** Bit Test - (3 bytes / 4 cycles) */
-  BIT = 0x2c,
-  /** Arithmetic Shift Left - Accumulator (1 byte / 2 cycles) */
-  ASL_A = 0x0a,
-  /** Rotate left - Zero Page (2 byte / 5 cycles) */
-  ROL_Z = 0x26,
-  /** Rotate left - Accumulator (1 byte / 2 cycles) */
-  ROL_A = 0x2a,
-  /** Rotate right - Absolute X (3 byte / 7 cycles) */
-  ROR_AX = 0x7e,
-  /** No Operation - (1 byte / 2 cycles) */
-  NOP = 0xea,
+
+  // Interrupt Instructions
+
   /** Non-maskable Interrupt - (1 byte / 6? cycles) */
   NMI = 0xfffa,
   /** Return from Interrupt - (1 byte / 6? cycles) */
   RTI = 0x40,
+
+  // Other Instructions
+
+  /** Bit Test - (2 bytes / 3 cycles) */
+  BIT_Z = 0x24,
+  /** Bit Test - (3 bytes / 4 cycles) */
+  BIT_A = 0x2c,
+  /** No Operation - (1 byte / 2 cycles) */
+  NOP = 0xea,
+
+  // Illegal Instructions
+  /** No Operation - (2 bytes / 3 cycles) */
+  NOP_Ill1 = 0x04,
+  /** No Operation - (2 bytes / 3 cycles) */
+  NOP_Ill2 = 0x44,
+  /** No Operation - (2 bytes / 3 cycles) */
+  NOP_Ill3 = 0x64,
+  /** No Operation - (3 bytes / 4 cycles) */
+  NOP_Ill4 = 0x0c,
+  /** No Operation - (2 bytes / 4 cycles) */
+  NOP_Ill5 = 0x14,
+  /** No Operation - (2 bytes / 4 cycles) */
+  NOP_Ill6 = 0x34,
+  /** No Operation - (2 bytes / 4 cycles) */
+  NOP_Ill7 = 0x54,
+  /** No Operation - (2 bytes / 4 cycles) */
+  NOP_Ill8 = 0x74,
+  /** No Operation - (2 bytes / 4 cycles) */
+  NOP_Ill9 = 0xd4,
+  /** No Operation - (2 bytes / 4 cycles) */
+  NOP_Ill10 = 0xf4,
+  /** No Operation - (1 byte / 2 cycles) */
+  NOP_Ill11 = 0x1a,
+  /** No Operation - (1 byte / 2 cycles) */
+  NOP_Ill12 = 0x3a,
+  /** No Operation - (1 byte / 2 cycles) */
+  NOP_Ill13 = 0x5a,
+  /** No Operation - (1 byte / 2 cycles) */
+  NOP_Ill14 = 0x7a,
+  /** No Operation - (1 byte / 2 cycles) */
+  NOP_Ill15 = 0xda,
+  /** No Operation - (1 byte / 2 cycles) */
+  NOP_Ill16 = 0xfa,
+  /** No Operation - (2 bytes / 2 cycles) */
+  NOP_Ill17 = 0x80,
+  /** No Operation - (3 bytes / 4 cycles) */
+  NOP_Ill18 = 0x1c,
+  /** No Operation - (3 bytes / 4 cycles) */
+  NOP_Ill19 = 0x3c,
+  /** No Operation - (3 bytes / 4 cycles) */
+  NOP_Ill20 = 0x5c,
+  /** No Operation - (3 bytes / 4 cycles) */
+  NOP_Ill21 = 0x7c,
+  /** No Operation - (3 bytes / 4 cycles) */
+  NOP_Ill22 = 0xdc,
+  /** No Operation - (3 bytes / 4 cycles) */
+  NOP_Ill23 = 0xfc,
+  /** Load X Register - Indirect X (2 bytes / 6 cycles) */
+  LAX_IX = 0xa3,
+  /** Load X Register - Indirect X (2 bytes / 6 cycles) */
+  LAX_Z = 0xa7,
+  /** Load X Register - Indirect X (2 bytes / 6 cycles) */
+  LAX_A = 0xaf,
 }
 
 export const CPU_INSTRUCTION_CYCLES: {
@@ -475,20 +564,66 @@ export const CPU_INSTRUCTION_CYCLES: {
   BPL: 4,
   BVC: 4,
   BVS: 4,
-
-  LSR_A: 2,
+  // Shift & Rotate Instructions
+  ASL_ACC: 2,
+  ASL_Z: 5,
+  ASL_ZX: 6,
+  ASL_A: 6,
+  ASL_AX: 7,
+  LSR_ACC: 2,
+  LSR_Z: 5,
+  LSR_ZX: 6,
+  LSR_A: 6,
+  LSR_AX: 7,
+  ROL_ACC: 2,
+  ROL_Z: 5,
+  ROL_ZX: 6,
+  ROL_A: 6,
+  ROL_AX: 7,
+  ROR_ACC: 2,
+  ROR_Z: 5,
+  ROR_ZX: 6,
+  ROR_A: 6,
+  ROR_AX: 7,
+  // Jump Instructions
   JSR: 6,
   JMP_A: 3,
   JMP_I: 5,
   RTS: 6,
-  BIT: 4,
-  NOP: 2,
-  ROL_A: 2,
-  ROL_Z: 5,
-  ROR_AX: 7,
-  ASL_A: 2,
+  // Interrupt Instructions
   NMI: 6,
   RTI: 6,
+  // Other Instructions
+  BIT_Z: 3,
+  BIT_A: 4,
+  NOP: 2,
+  // Illegal Instructions
+  NOP_Ill1: 3,
+  NOP_Ill2: 3,
+  NOP_Ill3: 3,
+  NOP_Ill4: 4,
+  NOP_Ill5: 4,
+  NOP_Ill6: 4,
+  NOP_Ill7: 4,
+  NOP_Ill8: 4,
+  NOP_Ill9: 4,
+  NOP_Ill10: 4,
+  NOP_Ill11: 2,
+  NOP_Ill12: 2,
+  NOP_Ill13: 2,
+  NOP_Ill14: 2,
+  NOP_Ill15: 2,
+  NOP_Ill16: 2,
+  NOP_Ill17: 2,
+  NOP_Ill18: 4,
+  NOP_Ill19: 4,
+  NOP_Ill20: 4,
+  NOP_Ill21: 4,
+  NOP_Ill22: 4,
+  NOP_Ill23: 4,
+  LAX_IX: 6,
+  LAX_Z: 3,
+  LAX_A: 4
 } as const;
 
 export enum STATUS_FLAGS {

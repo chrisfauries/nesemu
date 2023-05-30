@@ -2,11 +2,13 @@ import { CPU_INSTRUCTION, CPU_INSTRUCTION_CYCLES } from "./enums";
 import RAM from "./ram";
 import Registers from "./registers";
 import Execute from "./execute";
+import fs from "fs";
 
 class CPU {
   // Debugging values
   private enableLogs: boolean = false;
   private skipCycles: boolean = false;
+  private stream = fs.createWriteStream("./log.txt");
 
   // Initialized RAM and Registers
   private ram: RAM;
@@ -14,7 +16,7 @@ class CPU {
   private executor: (instruction: CPU_INSTRUCTION) => void;
 
   // NMI
-  private NMIflipped : boolean = false;
+  private NMIflipped: boolean = false;
 
   // Values for the current/last operation executed
   private opcode: number = 0x00;
@@ -30,6 +32,7 @@ class CPU {
 
   init() {
     this.buildRegisters();
+    // this.registers.setProgramCounter(0xc000); // TESTING
     this.resetVector();
   }
 
@@ -59,6 +62,7 @@ class CPU {
 
   checkInterupts() {
     if (this.ram.getNMI() && !this.NMIflipped) {
+      console.log('NMI triggered')
       this.executor(CPU_INSTRUCTION.NMI);
     }
     this.NMIflipped = this.ram.getNMI();
@@ -70,10 +74,12 @@ class CPU {
 
   decode() {
     this.instruction = this.opcode;
+    this.enableLogs && this.logDecode(true);
   }
 
   execute() {
     this.executor(this.instruction);
+    this.enableLogs && this.logExecute(true);
   }
 
   setCycles() {
@@ -88,24 +94,27 @@ class CPU {
     return this.registers;
   }
 
-  logDecode() {
+  logDecode(logFile?: boolean) {
     const log = {
       OP: CPU_INSTRUCTION[this.opcode],
-      PC: this.registers.getProgramCounter(),
+      PC: this.registers.getProgramCounter().toString(16),
     };
-    console.log(JSON.stringify(log) + "\n");
+    // console.log(JSON.stringify(log) + "\n");
+    logFile && this.stream.write(JSON.stringify(log));
   }
 
-  logExecute() {
+  logExecute(logFile?: boolean) {
     const log = {
       A: this.registers.getAccumulator(),
       X: this.registers.getX(),
       Y: this.registers.getY(),
+      SP: this.registers.getStatusRegister().toString(2),
       Z: this.registers.getZero(),
       N: this.registers.getNegative(),
       C: this.registers.getCarry(),
     };
-    console.log(JSON.stringify(log) + "\n");
+    // console.log(JSON.stringify(log) + "\n");
+    logFile && this.stream.write(JSON.stringify(log) + "\n");
   }
 }
 

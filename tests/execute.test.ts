@@ -1814,8 +1814,44 @@ describe.each<[TransferRegisterInputs]>([
 describe("Comparison Instructions", () => {});
 describe("Branch Register Instructions", () => {});
 
+function getBit(a: number, bit: number) {
+  return !!(a & (1 << bit)) ? 1 : 0;
+}
 
-describe.skip("Arithmetic Instructions", () => {
+function bitAdd(a: number, b: number, c: boolean) {
+  let result = 0;
+  let carry = c ? 1 : 0;
+  let carry6 = 0;
+  for (let bit = 0; bit < 8; bit++) {
+    const aBit = getBit(a, bit);
+    const bBit = getBit(b, bit);
+    const bitResult = aBit + bBit + carry;
+    carry = bitResult > 1 ? 1 : 0;
+    result += bitResult % 2 << bit;
+    if (bit === 6) {
+      carry6 = carry;
+    }
+  }
+  
+  
+  return {
+    result,
+    carry: !!carry,
+    overflow: !!(carry ^ carry6),
+  };
+}
+
+describe("Arithmetic Instructions", () => {
+  test.only("SBC", () => {
+    const a = 128;
+    const b = 0;
+    const c = false
+    const compB = new Uint8Array([~b])[0];
+    const actual = bitAdd(128, compB, c);
+    expect(actual.carry).toBeTruthy();
+    expect(actual.result).toEqual(127);
+  });
+
   // test("ADC_AY", () => {
   //   const opcode = 0x79;
   //   assertOpcode("ADC_AY", opcode);
@@ -1942,7 +1978,7 @@ describe.skip("Arithmetic Instructions", () => {
   //   });
   // });
 
-  test("SBC_AY", () => {
-    // Write tests for this
-  });
+  // test("SBC_AY", () => {
+  //   // Write tests for this
+  // });
 });

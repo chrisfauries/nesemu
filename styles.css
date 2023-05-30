@@ -1,6 +1,10 @@
+body {
+    background-color: black;
+}
+
 #emu {
     height: 960px;
-    width: 1280px;
+    width: 1024px;
 }
 
 #button {

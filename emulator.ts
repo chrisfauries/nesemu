@@ -3,13 +3,16 @@ import RAM from "./ram";
 import CPU from "./cpu";
 import PPU from "./ppu";
 import Clock from "./clock";
+import Controller from "./controller";
 
-const cartridge = new Cartridge("nestest.nes");
+const cartridge = new Cartridge("Donkey Kong.nes");
+console.log("Header: ", cartridge.getHeader());
 const ram = new RAM(cartridge);
+console.log("RAM: ", ram);
 const cpu = new CPU(ram);
 const ppu = new PPU(ram);
 const clock = new Clock(cpu, ppu);
-
+const controller = new Controller(ram);
 
 const createButton = (name: string, fn?: (e: MouseEvent) => void) => {
   const button = document.createElement("button");
@@ -19,32 +22,42 @@ const createButton = (name: string, fn?: (e: MouseEvent) => void) => {
   container?.appendChild(button);
 };
 
-
 createButton("step Clock", () => {
-  console.log('clock step')
+  console.log("clock step");
+  clock.step();
+  clock.step();
   clock.step();
   cpu.logDecode();
   cpu.logExecute();
-})
+});
 
 createButton("start Clock", () => {
   console.log("starting clock");
-  clock.start()
-})
+  clock.start();
+});
 
 createButton("stop Clock", () => {
   console.log("stopping clock");
-  clock.stop()
-})
+  clock.stop();
+});
 
 createButton("cycle frame", () => {
-  console.log('cycle frame')
+  console.log("cycle frame");
   clock.cycleFrame();
-})
+});
 
 createButton("dump memory", () => {
-  console.log('dumping memory:')
+  console.log("dumping memory:");
   console.log("ram: ", ram);
-  console.log("CPU registers: ", cpu.logRegisters())
-})
+  console.log("CPU registers: ", cpu.logRegisters());
+});
 
+createButton("start controller", () => {
+  console.log("starting controller");
+  controller.start();
+});
+
+createButton("stop controller", () => {
+  console.log("stopping controller");
+  controller.stop();
+});

@@ -641,7 +641,7 @@ class Execute {
   }
 
   private PHP() {
-    this.utils.pushStackValue(this.registers.getStatusRegister());
+    this.utils.pushStackValue(this.registers.getStatusRegister() | 0b0011_0000); // setting bit 5 and 4 on always
     this.registers.incrementProgramCounter();
   }
 
@@ -694,87 +694,181 @@ class Execute {
     this.utils.branch(!this.registers.getOverflow());
   }
 
+  /**
+   *  Shift/Rotate Operations Instructions -
+   */
+
+  private ASL_ACC() {
+    this.utils.shift(
+      AddressingMode.Accumulator,
+      ShiftType.Shift,
+      ShiftDirection.Left
+    );
+  }
+
+  private ASL_Z() {
+    this.utils.shift(
+      AddressingMode.Zero_Page,
+      ShiftType.Shift,
+      ShiftDirection.Left
+    );
+  }
+
+  private ASL_ZX() {
+    this.utils.shift(
+      AddressingMode.Zero_Page_Offset_X,
+      ShiftType.Shift,
+      ShiftDirection.Left
+    );
+  }
+
+  private ASL_A() {
+    this.utils.shift(
+      AddressingMode.Absolute,
+      ShiftType.Shift,
+      ShiftDirection.Left
+    );
+  }
+
+  private ASL_AX() {
+    this.utils.shift(
+      AddressingMode.Absolute_X,
+      ShiftType.Shift,
+      ShiftDirection.Left
+    );
+  }
+
+  private LSR_ACC() {
+    this.utils.shift(
+      AddressingMode.Accumulator,
+      ShiftType.Shift,
+      ShiftDirection.Right
+    );
+  }
+
+  private LSR_Z() {
+    this.utils.shift(
+      AddressingMode.Zero_Page,
+      ShiftType.Shift,
+      ShiftDirection.Right
+    );
+  }
+
+  private LSR_ZX() {
+    this.utils.shift(
+      AddressingMode.Zero_Page_Offset_X,
+      ShiftType.Shift,
+      ShiftDirection.Right
+    );
+  }
+
+  private LSR_A() {
+    this.utils.shift(
+      AddressingMode.Absolute,
+      ShiftType.Shift,
+      ShiftDirection.Right
+    );
+  }
+
+  private LSR_AX() {
+    this.utils.shift(
+      AddressingMode.Absolute_X,
+      ShiftType.Shift,
+      ShiftDirection.Right
+    );
+  }
+
+  private ROL_ACC() {
+    this.utils.shift(
+      AddressingMode.Accumulator,
+      ShiftType.Rotate,
+      ShiftDirection.Left
+    );
+  }
+
+  private ROL_Z() {
+    this.utils.shift(
+      AddressingMode.Zero_Page,
+      ShiftType.Rotate,
+      ShiftDirection.Left
+    );
+  }
+
+  private ROL_ZX() {
+    this.utils.shift(
+      AddressingMode.Zero_Page_Offset_X,
+      ShiftType.Rotate,
+      ShiftDirection.Left
+    );
+  }
+
+  private ROL_A() {
+    this.utils.shift(
+      AddressingMode.Absolute,
+      ShiftType.Rotate,
+      ShiftDirection.Left
+    );
+  }
+
+  private ROL_AX() {
+    this.utils.shift(
+      AddressingMode.Absolute_X,
+      ShiftType.Rotate,
+      ShiftDirection.Left
+    );
+  }
+
+  private ROR_ACC() {
+    this.utils.shift(
+      AddressingMode.Accumulator,
+      ShiftType.Rotate,
+      ShiftDirection.Right
+    );
+  }
+
+  private ROR_Z() {
+    this.utils.shift(
+      AddressingMode.Zero_Page,
+      ShiftType.Rotate,
+      ShiftDirection.Right
+    );
+  }
+
+  private ROR_ZX() {
+    this.utils.shift(
+      AddressingMode.Zero_Page_Offset_X,
+      ShiftType.Rotate,
+      ShiftDirection.Right
+    );
+  }
+
+  private ROR_A() {
+    this.utils.shift(
+      AddressingMode.Absolute,
+      ShiftType.Rotate,
+      ShiftDirection.Right
+    );
+  }
+
+  private ROR_AX() {
+    this.utils.shift(
+      AddressingMode.Absolute_X,
+      ShiftType.Rotate,
+      ShiftDirection.Right
+    );
+  }
+
+  // Other Instructions
+
+  private BIT_Z() {
+    this.utils.test(AddressingMode.Zero_Page);
+  }
+
+  private BIT_A() {
+    this.utils.test(AddressingMode.Absolute);
+  }
+
   // ******** NEEDS REFACTORING USING UTILS **********
-
-  // private LSR_A() {
-  //   this.registers.clearNegative();
-  //   const a = this.registers.getAccumulator();
-  //   a & 0b1 ? this.registers.setCarry() : this.registers.clearCarry();
-  //   const result = a >> 1;
-  //   this.registers.setZeroFromValue(result);
-  //   this.registers.setAccumulator(result);
-  //   this.registers.incrementProgramCounter();
-  // }
-
-  // private BIT() {
-  //   this.registers.incrementProgramCounter();
-  //   const memVal = this.utils.getValue(AddressingMode.Absolute);
-  //   const and = this.registers.getAccumulator() & memVal;
-  //   this.registers.setZeroFromValue(and);
-  //   this.registers.setNegativeFromValue(memVal);
-  //   ((memVal & 0b01000000) >> 6) & 1
-  //     ? this.registers.setOverflow()
-  //     : this.registers.clearOverflow();
-  //   this.registers.incrementProgramCounter(2);
-  // }
-
-  // private ROL_Z() {
-  //   // TODO: double check this for accuracy
-  //   this.registers.incrementProgramCounter();
-  //   const address = this.ram.get8(this.registers.getProgramCounter());
-  //   const value = this.ram.get8(address);
-  //   const newCarry = !!((value >> 7) & 1);
-  //   const oldCarry = +this.registers.getCarry();
-  //   const result = ((value & 0x01111111) << 1) | oldCarry;
-  //   this.ram.set8(address, result);
-  //   newCarry ? this.registers.setCarry() : this.registers.clearCarry();
-  //   this.registers.setZeroNegativeFlagsFromValue(
-  //     this.utils.getValue(AddressingMode.Absolute_X)
-  //   );
-  //   this.registers.incrementProgramCounter();
-  // }
-
-  // private ASL_A() {
-  //   // TODO: double check this for accuracy
-  //   const value = this.registers.getAccumulator();
-  //   const newCarry = !!((value >> 7) & 1);
-  //   const result = (value << 1) & 0x1111_1111;
-  //   this.registers.setAccumulator(result);
-  //   newCarry ? this.registers.setCarry() : this.registers.clearCarry();
-  //   this.registers.setZeroNegativeFlagsFromValue(
-  //     this.registers.getAccumulator()
-  //   );
-  //   this.registers.incrementProgramCounter();
-  // }
-
-  // private ROR_AX() {
-  //   // TODO: double check this for accuracy
-  //   this.registers.incrementProgramCounter();
-  //   const value = this.utils.getValue(AddressingMode.Absolute_X);
-  //   const newCarry = !!(value & 1);
-  //   const oldCarry = +this.registers.getCarry();
-  //   const result = ((value & 0x11111110) >> 1) | (oldCarry << 7);
-  //   this.utils.setValue(AddressingMode.Absolute_X, result);
-  //   newCarry ? this.registers.setCarry() : this.registers.clearCarry();
-  //   this.registers.setZeroNegativeFlagsFromValue(
-  //     this.utils.getValue(AddressingMode.Absolute_X)
-  //   );
-  //   this.registers.incrementProgramCounter(2);
-  // }
-
-  // private ROL_A() {
-  //   // TODO: double check this for accuracy
-  //   const a = this.registers.getAccumulator();
-  //   const newCarry = !!((a >> 7) & 1);
-  //   const oldCarry = +this.registers.getCarry();
-  //   const result = ((a & 0x01111111) << 1) | oldCarry;
-  //   this.registers.setAccumulator(result);
-  //   newCarry ? this.registers.setCarry() : this.registers.clearCarry();
-  //   this.registers.setZeroNegativeFlagsFromValue(
-  //     this.registers.getAccumulator()
-  //   );
-  //   this.registers.incrementProgramCounter();
-  // }
 
   private JSR() {
     const PC = this.registers.getProgramCounter() + 2;
@@ -793,7 +887,14 @@ class Execute {
   private JMP_I() {
     this.registers.incrementProgramCounter();
     const indirect = this.ram.get16(this.registers.getProgramCounter());
-    const jumpAddress = this.ram.get16(indirect);
+    const jumpAddressLow = this.ram.get8(indirect);
+    let jumpAddressHigh;
+    if (!(0xff ^ (indirect & 0xff))) {
+      jumpAddressHigh = this.ram.get8(indirect ^ 0x00ff);
+    } else {
+      jumpAddressHigh = this.ram.get8(indirect + 1);
+    }
+    const jumpAddress = (jumpAddressHigh << 8) + jumpAddressLow;
     this.registers.setProgramCounter(jumpAddress);
   }
 
@@ -820,6 +921,120 @@ class Execute {
   private NOP() {
     this.registers.incrementProgramCounter();
   }
+
+  /**
+   *  Illegal Operations Instructions -
+   */
+
+  private NOP_Ill1() {
+    this.registers.incrementProgramCounter(2);
+  }
+
+  private NOP_Ill2() {
+    this.registers.incrementProgramCounter(2);
+  }
+
+  private NOP_Ill3() {
+    this.registers.incrementProgramCounter(2);
+  }
+
+  private NOP_Ill4() {
+    this.registers.incrementProgramCounter(3);
+  }
+
+  private NOP_Ill5() {
+    this.registers.incrementProgramCounter(2);
+  }
+
+  private NOP_Ill6() {
+    this.registers.incrementProgramCounter(2);
+  }
+
+  private NOP_Ill7() {
+    this.registers.incrementProgramCounter(2);
+  }
+
+  private NOP_Ill8() {
+    this.registers.incrementProgramCounter(2);
+  }
+
+  private NOP_Ill9() {
+    this.registers.incrementProgramCounter(2);
+  }
+
+  private NOP_Ill10() {
+    this.registers.incrementProgramCounter(2);
+  }
+
+  private NOP_Ill11() {
+    this.registers.incrementProgramCounter();
+  }
+
+  private NOP_Ill12() {
+    this.registers.incrementProgramCounter();
+  }
+
+  private NOP_Ill13() {
+    this.registers.incrementProgramCounter();
+  }
+
+  private NOP_Ill14() {
+    this.registers.incrementProgramCounter();
+  }
+
+  private NOP_Ill15() {
+    this.registers.incrementProgramCounter();
+  }
+
+  private NOP_Ill16() {
+    this.registers.incrementProgramCounter();
+  }
+
+  private NOP_Ill17() {
+    this.registers.incrementProgramCounter(2);
+  }
+
+  private NOP_Ill18() {
+    this.registers.incrementProgramCounter(3);
+  }
+
+  private NOP_Ill19() {
+    this.registers.incrementProgramCounter(3);
+  }
+
+  private NOP_Ill20() {
+    this.registers.incrementProgramCounter(3);
+  }
+
+  private NOP_Ill21() {
+    this.registers.incrementProgramCounter(3);
+  }
+
+  private NOP_Ill22() {
+    this.registers.incrementProgramCounter(3);
+  }
+
+  private NOP_Ill23() {
+    this.registers.incrementProgramCounter(3);
+  }
+
+  private LAX_IX() {
+    this.LDA_IX();
+    this.TAX();
+    this.registers.incrementProgramCounter(-1);
+  }
+
+  private LAX_Z() {
+    this.LDA_Z();
+    this.TAX();
+    this.registers.incrementProgramCounter(-1);
+  }
+
+  private LAX_A() {
+    this.LDA_A();
+    this.TAX();
+    this.registers.incrementProgramCounter(-1);
+  }
 }
 
 enum ArithmeticType {
@@ -839,7 +1054,18 @@ enum DataRegister {
   STACK_POINTER,
 }
 
+enum ShiftType {
+  Shift,
+  Rotate,
+}
+
+enum ShiftDirection {
+  Left,
+  Right,
+}
+
 enum AddressingMode {
+  Accumulator,
   Immediate,
   Zero_Page,
   Zero_Page_Offset_X,
@@ -859,6 +1085,7 @@ enum LogicalOperationType {
 }
 
 const POST_EXECUTION_PC_STEPS = {
+  [AddressingMode.Accumulator]: 0,
   [AddressingMode.Immediate]: 1,
   [AddressingMode.Zero_Page]: 1,
   [AddressingMode.Zero_Page_Offset_X]: 1,
@@ -883,28 +1110,28 @@ class Utils {
   public pushStack(bit16Value: number) {
     const low = bit16Value & 0b11111111;
     const high = bit16Value >> 8;
-    this.ram.set8((0x10 << 8) + this.registers.getStackPointer(), high);
+    this.ram.set8(0x100 + this.registers.getStackPointer(), high);
     this.registers.decrementStackPointer();
-    this.ram.set8((0x10 << 8) + this.registers.getStackPointer(), low);
+    this.ram.set8(0x100 + this.registers.getStackPointer(), low);
     this.registers.decrementStackPointer();
   }
 
   public pushStackValue(bit8Value: number) {
-    this.ram.set8((0x10 << 8) + this.registers.getStackPointer(), bit8Value);
+    this.ram.set8(0x100 + this.registers.getStackPointer(), bit8Value);
     this.registers.decrementStackPointer();
   }
 
   public pullStack() {
     this.registers.incrementStackPointer();
-    const low = this.ram.get8((0x10 << 8) + this.registers.getStackPointer());
+    const low = this.ram.get8(0x100 + this.registers.getStackPointer());
     this.registers.incrementStackPointer();
-    const high = this.ram.get8((0x10 << 8) + this.registers.getStackPointer());
+    const high = this.ram.get8(0x100 + this.registers.getStackPointer());
     return (high << 8) + low;
   }
 
   public pullStackValue() {
     this.registers.incrementStackPointer();
-    return this.ram.get8((0x10 << 8) + this.registers.getStackPointer());
+    return this.ram.get8(0x100 + this.registers.getStackPointer());
   }
 
   public logicalOperation(type: LogicalOperationType, mode: AddressingMode) {
@@ -960,13 +1187,12 @@ class Utils {
     this.incPC();
     const a = this.getRegisterValue(DataRegister.A);
     const m = this.getValue(mode);
-    const mCompliment = ~m + 1;
+    const mCompliment = new Uint8Array([~m])[0];
     const c = this.getFlagValue(STATUS_FLAGS.CARRY);
-    const b = !c;
     const { result, carry, overflow } = Utils.bitAdd(
       a,
       type === ArithmeticType.Add ? m : mCompliment,
-      type === ArithmeticType.Add ? c : b
+      c
     );
     this.setRegisterValue(DataRegister.A, result);
     this.setNZ(this.getRegisterValue(DataRegister.A));
@@ -982,10 +1208,10 @@ class Utils {
   public compare(mode: AddressingMode, reg: DataRegister) {
     this.incPC();
     const r = this.getRegisterValue(reg);
-    const m = ~this.getValue(mode) + 1;
-    const { result, carry } = Utils.bitAdd(r, m, false);
+    const m = this.getValue(mode);
+    const { result } = Utils.bitAdd(r, ~m + 1, false);
     this.setNZ(result);
-    carry
+    r >= m
       ? this.setFlagValue(STATUS_FLAGS.CARRY)
       : this.clearFlagValue(STATUS_FLAGS.CARRY);
     this.postOpIncPC(mode);
@@ -998,6 +1224,47 @@ class Utils {
     if (condition) {
       this.incPC(rel);
     }
+  }
+
+  public shift(
+    mode: AddressingMode,
+    type: ShiftType,
+    direction: ShiftDirection
+  ) {
+    this.incPC();
+    const value = this.getValue(mode);
+    const carryIn = type === ShiftType.Rotate ? +this.registers.getCarry() : 0;
+    let carryOut: boolean;
+    let shiftedValue: number;
+    switch (direction) {
+      case ShiftDirection.Left:
+        carryOut = !!(value & 0b1000_0000);
+        shiftedValue = ((value << 1) & 0b1111_1111) | carryIn;
+        break;
+      case ShiftDirection.Right:
+        carryOut = !!(value & 0b0000_0001);
+        shiftedValue = (value >> 1) | (carryIn << 7);
+        break;
+    }
+
+    carryOut ? this.registers.setCarry() : this.registers.clearCarry();
+
+    this.setValue(mode, shiftedValue);
+    this.setNZ(shiftedValue);
+    this.postOpIncPC(mode);
+  }
+
+  public test(mode: AddressingMode) {
+    this.incPC();
+    const a = this.registers.getAccumulator();
+    const m = this.getValue(mode);
+    const overflow = !!(m & 0b0100_0000);
+    overflow ? this.registers.setOverflow() : this.registers.clearOverflow();
+    const negative = !!(m & 0b1000_0000);
+    negative ? this.registers.setNegative() : this.registers.clearNegative();
+    const zero = !(a & m);
+    zero ? this.registers.setZero() : this.registers.clearZero();
+    this.postOpIncPC(mode);
   }
 
   public loadDataRegister(reg: DataRegister, mode: AddressingMode) {
@@ -1022,6 +1289,8 @@ class Utils {
   // TODO: make private after refactor
   public getValue(addressingMode: AddressingMode) {
     switch (addressingMode) {
+      case AddressingMode.Accumulator:
+        return this.registers.getAccumulator();
       case AddressingMode.Immediate:
         return this.getImmediateValue();
       case AddressingMode.Zero_Page:
@@ -1048,6 +1317,8 @@ class Utils {
   // TODO: make private after refactor
   public setValue(addressingMode: AddressingMode, val: number) {
     switch (addressingMode) {
+      case AddressingMode.Accumulator:
+        return this.registers.setAccumulator(val);
       case AddressingMode.Zero_Page:
         return this.setZeroPageValue(val);
       case AddressingMode.Zero_Page_Offset_X:
