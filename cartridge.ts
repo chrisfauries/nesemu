@@ -9,7 +9,7 @@ class Cartridge {
   private CHRROM: Buffer;
 
   constructor(file: string) {
-    this.gameBuffer = fs.readFileSync(path.join(__dirname, "../" + file));
+    this.gameBuffer = fs.readFileSync(path.join(__dirname, "../games/" + file));
     this.header = this.setHeader();
     this.PRGROM = this.setPRGROM();
     this.CHRROM = this.setCHRROM();

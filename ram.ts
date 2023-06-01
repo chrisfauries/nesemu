@@ -1,5 +1,4 @@
 import Cartridge from "./cartridge";
-import { Button } from "./controller";
 import { MAPPER } from "./enums";
 
 enum Byte {
@@ -19,6 +18,8 @@ class RAM {
   private vRam: Uint8Array = new Uint8Array(new ArrayBuffer(0x3fff));
   public vRamAddress: number = 0x00;
   private vRamAddressByte: Byte = Byte.HIGH;
+  private oamAddress: number = 0x00;
+  private oamData: Uint8Array = new Uint8Array(0x100);
   private bytes: Uint8Array;
   private cartridge: Cartridge;
 
@@ -65,7 +66,7 @@ class RAM {
       return value;
     }
     if (bit16address === 0x2007) {
-      const value =  this.vRam[this.vRamAddress++];
+      const value = this.vRam[this.vRamAddress];
       this.vRamAddress += this.getPPU_CTRL_INCREMENT_MODE();
       return value;
     }
@@ -79,9 +80,9 @@ class RAM {
 
   public get8signed(bit16address: number) {
     if (bit16address >= 0x0000 && bit16address < 0x2000) {
-      return new Int8Array([this.get8CPURAM(bit16address)])[0];
-    }
-    return new Int8Array([this.bytes[bit16address]])[0];
+      return new Int8Array([this.get8CPURAM(bit16address)])[0]; // TODO: slow
+    } 
+    return new Int8Array([this.bytes[bit16address]])[0]; // TODO: slow
   }
 
   public get16(bit16address: number) {
@@ -97,7 +98,6 @@ class RAM {
 
   public set8(bit16address: number, value: number) {
     if (bit16address >= 0x0000 && bit16address < 0x2000) {
- 
       // if (bit16address === 0x0000 && value === 0x93) { // Used for nestest.nes break points
       //   throw new Error('setting error code')
       // }
@@ -109,7 +109,7 @@ class RAM {
     }
 
     if (bit16address === 0x2003) {
-      console.log("writing to the OAM address reg - NOT IMPLEMENTED");
+      this.oamAddress = value;
     }
 
     if (bit16address === 0x2004) {
@@ -117,7 +117,10 @@ class RAM {
     }
 
     if (bit16address === 0x4014) {
-      console.log("writing to the OAM DMA - NOT IMPLEMENTED");
+      const cpuData = this.cpuRam.subarray(value << 8, (value << 8) + 0xff);
+      cpuData.forEach((byte) => {
+        this.oamData[this.oamAddress++] = byte;
+      });
     }
 
     if (bit16address === 0x4016) {
@@ -161,15 +164,20 @@ class RAM {
   public get8vRam(bit16address: number) {
     return this.vRam[bit16address];
   }
+
   public get8vRamRange(bit16addressStart: number, bit16addressEnd: number) {
-    return this.vRam.subarray(bit16addressStart, bit16addressEnd)
+    return this.vRam.subarray(bit16addressStart, bit16addressEnd);
+  }
+
+  public getOAMData() {
+    return this.oamData;
   }
 
   public getCHRROM() {
     return this.cartridge.getCHRROM();
   }
 
-  public getPPU_CTRL() {
+  public getPPU_CTRL() { // TODO: slow
     return new Uint8Array(this.buffer, 0x2000, 1);
   }
 
@@ -179,11 +187,11 @@ class RAM {
       : PPU_INCREMENT_MODE.HORIZONTAL;
   }
 
-  public getPPU_MASK() {
+  public getPPU_MASK() { // TODO: slow
     return new Uint8Array(this.buffer, 0x2001, 1);
   }
 
-  public getPPU_STATUS() {
+  public getPPU_STATUS() { // TODO: slow
     return new Uint8Array(this.buffer, 0x2002, 1);
   }
 

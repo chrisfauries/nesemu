@@ -17,7 +17,7 @@ class Execute {
   public execute(instruction: CPU_INSTRUCTION) {
     // TODO: fix type here
     type methodName = Exclude<keyof Execute, "prototype" | "execute">;
-    const fn: () => {} = this[CPU_INSTRUCTION[instruction] as methodName];
+    const fn: () => {} = this[CPU_INSTRUCTION[instruction] as methodName]; // TODO: slow
     if (fn === undefined) {
       throw Error(
         "no method implementation for code: " +

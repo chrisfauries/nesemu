@@ -1,6 +1,6 @@
 import { BASE_NAMETABLE_ADDRESS, CHRROM_SIDE } from "./enums";
 import RAM from "./ram";
-import Tile from "./tile";
+import Tile, { SpriteOrientation } from "./tile";
 
 interface RGBA {
   red: number;
@@ -9,36 +9,83 @@ interface RGBA {
   opacity: 0 | 255;
 }
 
+interface SpriteData {
+  orientation: SpriteOrientation;
+  behindBackground: boolean;
+  paletteIndex: number;
+}
+
 class Palette {
   private static palettes: { [code: number]: RGBA } = {
-    // TODO: double check these values
     0x00: { red: 101, green: 101, blue: 101, opacity: 255 },
     0x01: { red: 0, green: 45, blue: 105, opacity: 255 },
     0x02: { red: 19, green: 31, blue: 127, opacity: 255 },
     0x03: { red: 60, green: 19, blue: 124, opacity: 255 },
+    0x04: { red: 96, green: 11, blue: 98, opacity: 255 },
+    0x05: { red: 115, green: 10, blue: 55, opacity: 255 },
     0x06: { red: 113, green: 15, blue: 7, opacity: 255 },
-    // FILL THESE
+    0x07: { red: 90, green: 26, blue: 0, opacity: 255 },
+    0x08: { red: 52, green: 40, blue: 0, opacity: 255 },
+    0x09: { red: 11, green: 52, blue: 0, opacity: 255 },
+    0x0a: { red: 0, green: 60, blue: 0, opacity: 255 },
+    0x0b: { red: 0, green: 61, blue: 16, opacity: 255 },
+    0x0c: { red: 0, green: 56, blue: 64, opacity: 255 },
+    0x0d: { red: 0, green: 0, blue: 0, opacity: 255 },
+    0x0e: { red: 0, green: 0, blue: 0, opacity: 255 },
     0x0f: { red: 0, green: 0, blue: 0, opacity: 255 },
+    0x10: { red: 174, green: 174, blue: 174, opacity: 255 },
+    0x11: { red: 15, green: 99, blue: 179, opacity: 255 },
     0x12: { red: 64, green: 81, blue: 208, opacity: 255 },
+    0x13: { red: 120, green: 65, blue: 204, opacity: 255 },
+    0x14: { red: 167, green: 54, blue: 169, opacity: 255 },
+    0x15: { red: 192, green: 52, blue: 112, opacity: 255 },
+    0x16: { red: 189, green: 60, blue: 48, opacity: 255 },
     0x17: { red: 159, green: 74, blue: 0, opacity: 255 },
-    0x1a: { red: 0, green: 121, blue: 61, opacity: 255 },
+    0x18: { red: 109, green: 92, blue: 0, opacity: 255 },
+    0x19: { red: 54, green: 109, blue: 0, opacity: 255 },
+    0x1a: { red: 7, green: 119, blue: 4, opacity: 255 },
+    0x1b: { red: 0, green: 121, blue: 61, opacity: 255 },
+    0x1c: { red: 0, green: 114, blue: 125, opacity: 255 },
+    0x1d: { red: 0, green: 0, blue: 0, opacity: 255 },
+    0x1e: { red: 0, green: 0, blue: 0, opacity: 255 },
+    0x1f: { red: 0, green: 0, blue: 0, opacity: 255 },
+    0x20: { red: 254, green: 254, blue: 255, opacity: 255 },
+    0x21: { red: 93, green: 179, blue: 255, opacity: 255 },
+    0x22: { red: 143, green: 161, blue: 255, opacity: 255 },
+    0x23: { red: 200, green: 144, blue: 255, opacity: 255 },
     0x24: { red: 247, green: 133, blue: 250, opacity: 255 },
+    0x25: { red: 255, green: 131, blue: 192, opacity: 255 },
+    0x26: { red: 255, green: 139, blue: 127, opacity: 255 },
     0x27: { red: 239, green: 154, blue: 73, opacity: 255 },
+    0x28: { red: 189, green: 172, blue: 44, opacity: 255 },
+    0x29: { red: 133, green: 188, blue: 47, opacity: 255 },
+    0x2a: { red: 85, green: 199, blue: 83, opacity: 255 },
+    0x2b: { red: 60, green: 201, blue: 140, opacity: 255 },
     0x2c: { red: 62, green: 194, blue: 205, opacity: 255 },
-    // FILL THESE
+    0x2d: { red: 78, green: 78, blue: 78, opacity: 255 },
+    0x2e: { red: 0, green: 0, blue: 0, opacity: 255 },
+    0x2f: { red: 0, green: 0, blue: 0, opacity: 255 },
     0x30: { red: 254, green: 254, blue: 255, opacity: 255 },
+    0x31: { red: 188, green: 223, blue: 255, opacity: 255 },
+    0x32: { red: 209, green: 216, blue: 255, opacity: 255 },
     0x33: { red: 232, green: 209, blue: 255, opacity: 255 },
+    0x34: { red: 251, green: 205, blue: 253, opacity: 255 },
+    0x35: { red: 255, green: 204, blue: 229, opacity: 255 },
     0x36: { red: 255, green: 207, blue: 202, opacity: 255 },
+    0x37: { red: 248, green: 213, blue: 180, opacity: 255 },
     0x38: { red: 228, green: 220, blue: 168, opacity: 255 },
+    0x39: { red: 204, green: 227, blue: 169, opacity: 255 },
+    0x3a: { red: 185, green: 232, blue: 184, opacity: 255 },
+    0x3b: { red: 174, green: 232, blue: 208, opacity: 255 },
+    0x3c: { red: 175, green: 229, blue: 234, opacity: 255 },
+    0x3d: { red: 182, green: 182, blue: 182, opacity: 255 },
+    0x3e: { red: 0, green: 0, blue: 0, opacity: 255 },
+    0x3f: { red: 0, green: 0, blue: 0, opacity: 255 },
   };
   constructor() {}
 
   static getPaletteFromCode(code: number): RGBA {
-    const rgba = this.palettes[code];
-    if (!rgba) {
-      throw new Error("Unimplemented Palette: " + code.toString(16));
-    }
-    return rgba;
+    return this.palettes[code];
   }
 
   static loadData(data: Uint8ClampedArray, rgba: RGBA) {
@@ -61,12 +108,15 @@ class PPU {
   private CHRROM_RIGHT!: Uint8Array;
 
   private bgPatternTable: Uint8Array = new Uint8Array(0x1000);
-  private spitePatternTable: Uint8Array = new Uint8Array(0x1000);
+  private spritePatternTable: Uint8Array = new Uint8Array(0x1000);
   private nameTable: Uint8Array = new Uint8Array(0x03c0);
   private attributeTable: Uint8Array = new Uint8Array(0x40);
   private paletteTable: Uint8Array = new Uint8Array(0x20);
   private bgTiles: Array<Tile> = new Array(960).fill(null);
+  private spriteTiles: Array<Tile> = new Array(960).fill(null);
   private frameData: Uint8ClampedArray = new Uint8ClampedArray(245760);
+
+  private oamData: Uint8Array = new Uint8Array(0x100);
 
   private tile: Tile | null = null;
   constructor(ram: RAM) {
@@ -102,20 +152,41 @@ class PPU {
       this.loadNameTable();
       this.loadAttributeTable();
       this.buildBgTiles();
+      this.buildSpriteTiles();
+      this.loadOamData();
     }
 
     if (this.scanline >= 0 && this.scanline <= 239) {
+      let bgPixel: number = 0;
+      // Draw BG Spite
       if (this.cycle > 255) {
       } else if (this.cycle % 8 === 0) {
         this.tile = this.getBgTile();
-        const pixel = this.tile.tile[this.scanline % 8][this.cycle % 8];
-        this.renderPixel(pixel);
+        bgPixel = this.tile.tile[this.scanline % 8][this.cycle % 8];
+        this.renderPixel(bgPixel);
       } else {
-        const pixel = this.tile?.tile[this.scanline % 8][this.cycle % 8];
-        if (pixel === undefined) {
-          throw new Error("no pixel data");
+        bgPixel = this.tile?.tile[this.scanline % 8][this.cycle % 8]!;
+        this.renderPixel(bgPixel);
+      }
+
+      if (this.cycle < 256) {
+        // Draw Sprite
+
+        // Idea: instead of calling this loop for each pixel of the frame
+        // at the top of the frame, 'draw' all sprite in reverse order to a data structure
+        // then just do look ups to determine whether to draw the sprite pixel at this point
+        const sprite = this.findSprite();
+        if (sprite) {
+          const spritePixel = sprite.tile.getPixel(
+            sprite.y,
+            sprite.x,
+            sprite.data.orientation
+          );
+          // only render anything if this sprite has priority or if sprite pixel is visible
+          if (spritePixel && !(sprite.data.behindBackground && bgPixel)) {
+            this.renderPixel(spritePixel, sprite.data.paletteIndex);
+          }
         }
-        this.renderPixel(pixel);
       }
     }
     if (this.scanline === 240 && this.cycle === 0) {
@@ -131,9 +202,46 @@ class PPU {
     this.cycle++;
   }
 
+  loadOamData() {
+    this.oamData = this.ram.getOAMData();
+  }
+
+  findSprite() {
+    const screenX = this.cycle;
+    const screenY = this.scanline;
+    for (let i = 0; i < 64; i++) {
+      const spriteY = this.oamData[i * 4];
+      const spriteX = this.oamData[i * 4 + 3];
+      if (
+        this.isInRange(screenX, spriteX) &&
+        this.isInRange(screenY, spriteY)
+      ) {
+        return {
+          data: this.getSpriteData(this.oamData[i * 4 + 2]),
+          tile: this.spriteTiles[this.oamData[i * 4 + 1]],
+          x: screenX - spriteX,
+          y: screenY - spriteY,
+        };
+      }
+    }
+    return null;
+  }
+
+  getSpriteData(byte: number): SpriteData {
+    return {
+      orientation: (byte & 0b1100_0000) >> 6,
+      paletteIndex: byte & 0b0000_0011,
+      behindBackground: !!(byte & 0b0001_0000),
+    };
+  }
+
+  isInRange(screen: number, sprite: number) {
+    return screen >= sprite && screen <= sprite + 7;
+  }
+
   setupPatternTables() {
     this.bgPatternTable = this.getCHRROMbackgroundTable();
-    this.spitePatternTable = this.getCHRROMSpiteTable();
+    this.spritePatternTable = this.getCHRROMSpiteTable();
   }
 
   loadNameTable() {
@@ -163,6 +271,13 @@ class PPU {
     }
   }
 
+  buildSpriteTiles() {
+    for (let i = 0; i < 256; i++) {
+      const pattern = this.spritePatternTable.subarray(i * 16, 16 + 16 * i);
+      this.spriteTiles[i] = new Tile(pattern);
+    }
+  }
+
   getBgTile() {
     const nameTableEntryAddress =
       32 * Math.floor(this.scanline / 8) + Math.floor(this.cycle / 8);
@@ -170,15 +285,24 @@ class PPU {
     return this.bgTiles[patternTableEntryValue];
   }
 
-  renderPixel(val: number) {
+  renderPixel(val: number, paletteIndex: number | null = null) {
     const start = (this.scanline * 256 + this.cycle) * 4;
     const data = this.frameData.subarray(start, start + 4);
-    const paletteIndex = this.getBgAttributePalleteIndex(); // 0-3
-    const paletteValue = this.paletteTable.at(
-      !val ? 0 : 1 + paletteIndex * 4 + val
-    );
-    const palette = Palette.getPaletteFromCode(paletteValue || 0); // TODO: fix
+    const paletteValue =
+      paletteIndex === null
+        ? this.getBgPaletteValue(val)
+        : this.getSpritePaletteValue(val, paletteIndex);
+    const palette = Palette.getPaletteFromCode(paletteValue);
     Palette.loadData(data, palette);
+  }
+
+  getBgPaletteValue(val: number) {
+    const index = this.getBgAttributePalleteIndex();
+    return this.paletteTable.at(index * 4 + val)!;
+  }
+
+  getSpritePaletteValue(val: number, index: number) {
+    return this.paletteTable.at((index * 4 + val) + 0x10)!;
   }
 
   renderFrame() {

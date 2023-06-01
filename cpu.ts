@@ -62,7 +62,6 @@ class CPU {
 
   checkInterupts() {
     if (this.ram.getNMI() && !this.NMIflipped) {
-      console.log('NMI triggered')
       this.executor(CPU_INSTRUCTION.NMI);
     }
     this.NMIflipped = this.ram.getNMI();

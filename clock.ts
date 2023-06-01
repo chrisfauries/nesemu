@@ -7,11 +7,11 @@ class Clock {
   private isRunning = false;
   private frameCount = 0;
   private cycleCount = 0;
+  private startTime = 0;
+  private fps = 0;
 
   // debugging
-  private logStats = false;
-  private fakeCPUcalls = 0;
-  private fakePPUcalls = 0;
+  private logStats = true;
 
   private cpu: CPU;
   private ppu: PPU;
@@ -21,6 +21,7 @@ class Clock {
   }
 
   public start() {
+    this.startTime = Date.now();
     this.isRunning = true;
     this.run();
   }
@@ -37,7 +38,8 @@ class Clock {
   public reset() {
     this.isRunning = false;
     this.cycleCount = 0;
-    // call cpu.reset() and ppu.reset() here too
+    // this.cpu.reset();
+    // this.ppu.reset();
   }
 
   private run() {
@@ -53,39 +55,35 @@ class Clock {
 
   public cycleFrame() {
     let i = this.TICKS_PER_FRAME;
-    this.logStats && console.time('frame time:');
+    this.logStats && console.time("frame time:");
     while (i--) {
-        this.tick();
-        this.cycleCount++;
+      this.tick();
+      this.cycleCount++;
     }
-    this.logStats && console.timeEnd('frame time:');
+    this.logStats && console.timeEnd("frame time:");
     this.frameCount++;
     this.logStats && console.log("Frame: ", this.cycleCount);
     this.logStats && console.log("Cycle: ", this.frameCount);
-    this.logStats && console.log("CPU: ", this.fakeCPUcalls);
-    this.logStats && console.log("PPU: ", this.fakePPUcalls);
+    this.fps = this.frameCount / ((Date.now() - this.startTime) / 1000);
+    this.logStats && console.log("FPS: ", this.fps);
   }
 
   private tick() {
     if (this.cycleCount % 3 === 0) {
       this.cpu.tick();
-      this.fakeCPUcalls++;
     }
     this.ppu.tick();
-    this.fakePPUcalls++;
   }
 
   private queueNextFrame() {
     if (this.slowClock) {
-      setTimeout(() => this.run(), 200)
+      setTimeout(() => this.run(), 200);
     } else {
       window.requestAnimationFrame(() => {
         this.run();
       });
-
     }
   }
 }
-
 
 export default Clock;
