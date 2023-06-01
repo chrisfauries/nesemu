@@ -11,3 +11,7 @@ body {
     background-color: lightblue;
     border: none;
 }
+
+.fps {
+    color: white;
+}

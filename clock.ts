@@ -11,7 +11,7 @@ class Clock {
   private fps = 0;
 
   // debugging
-  private logStats = true;
+  private logStats = false;
 
   private cpu: CPU;
   private ppu: PPU;
@@ -66,6 +66,10 @@ class Clock {
     this.logStats && console.log("Cycle: ", this.frameCount);
     this.fps = this.frameCount / ((Date.now() - this.startTime) / 1000);
     this.logStats && console.log("FPS: ", this.fps);
+  }
+
+  public getFrameRate() {
+    return this.fps;
   }
 
   private tick() {

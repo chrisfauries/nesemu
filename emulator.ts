@@ -22,6 +22,19 @@ const createButton = (name: string, fn?: (e: MouseEvent) => void) => {
   container?.appendChild(button);
 };
 
+const fps = document.createElement('div');
+fps.classList.add('fps')
+fps.append(document.createElement('span'))
+fps.append(document.createElement('span'))
+container?.append(fps)
+fps.children[1].innerHTML = ' : FPS';
+const updateFPS = () => {
+  fps.children[0].innerHTML = clock.getFrameRate().toFixed(2);
+  window.requestAnimationFrame(() => {
+    updateFPS();
+  })
+}
+
 const select  = document.createElement("select");
 const games = fs.readdirSync(path.join(__dirname,'../games'), {withFileTypes: true});
 games.forEach((game) => {
@@ -55,6 +68,7 @@ createButton("step Clock", () => {
 createButton("start Clock", () => {
   console.log("starting clock");
   clock.start();
+  updateFPS();
 });
 
 createButton("stop Clock", () => {
