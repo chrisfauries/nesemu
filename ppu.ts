@@ -9,6 +9,13 @@ interface SpriteData {
   paletteIndex: number;
 }
 
+interface SpritePixel {
+  value: number; // 0-3  Actual value of the sprite pixel
+  // id: number; // 0-63 priority order in the sprite list, lower takes presidence
+  hide: boolean; // whether to hide behind the background
+  palette: number; // 0-3 which palette to use
+}
+
 class PPU {
   private ctx: CanvasRenderingContext2D;
   private scanline = 0;
@@ -30,6 +37,9 @@ class PPU {
   private frameData: Uint8ClampedArray = new Uint8ClampedArray(245760);
 
   private oamData: Uint8Array = new Uint8Array(0x100);
+
+  private spritePixels: Array<Array<SpritePixel | null>> =
+    PPU.getNewSpritePixelTable();
 
   private bgTile: Tile | null = null;
   constructor(ram: RAM) {
@@ -67,6 +77,7 @@ class PPU {
       this.buildBgTiles();
       this.buildSpriteTiles();
       this.loadOamData();
+      this.buildSpritePixels();
     }
 
     if (this.scanline >= 0 && this.scanline <= 239) {
@@ -78,22 +89,10 @@ class PPU {
         this.renderPixel(bgPixel);
 
         // Draw Sprite
-
-        // Idea: instead of calling this loop for each pixel of the frame
-        // at the top of the frame, 'draw' all sprite in reverse order to a data structure
-        // then just do look ups to determine whether to draw the sprite pixel at this point
-        // this could fix the issue of overlapping sprites
-        const sprite = this.findSprite();
-        if (sprite) {
-          const spritePixel = sprite.tile.getPixel(
-            sprite.y,
-            sprite.x,
-            sprite.data.orientation
-          );
-          // only render anything if this sprite has priority or if sprite pixel is visible
-          if (spritePixel && !(sprite.data.behindBackground && bgPixel)) {
-            this.renderPixel(spritePixel, sprite.data.paletteIndex);
-          }
+        const sprite = this.spritePixels[this.scanline][this.cycle];
+        // only render anything if this sprite has priority or if sprite pixel is visible
+        if (sprite && sprite.value && !(sprite.hide && bgPixel)) {
+          this.renderPixel(sprite.value, sprite.palette);
         }
       }
     }
@@ -114,25 +113,44 @@ class PPU {
     this.oamData = this.ram.getOAMData();
   }
 
-  findSprite() {
-    const screenX = this.cycle;
-    const screenY = this.scanline;
-    for (let i = 0; i < 64; i++) {
-      const spriteY = this.oamData[i * 4];
-      const spriteX = this.oamData[i * 4 + 3];
-      if (
-        this.isInRange(screenX, spriteX) &&
-        this.isInRange(screenY, spriteY)
-      ) {
-        return {
-          data: this.getSpriteData(this.oamData[i * 4 + 2]),
-          tile: this.spriteTiles[this.oamData[i * 4 + 1]],
-          x: screenX - spriteX,
-          y: screenY - spriteY,
-        };
+  buildSpritePixels() {
+    this.spritePixels = PPU.getNewSpritePixelTable();
+    for (let i = 63; i >= 0; i--) {
+      const tile = this.spriteTiles[this.oamData[i * 4 + 1]];
+      const data = this.getSpriteData(this.oamData[i * 4 + 2]);
+      const spriteX = this.oamData[i * 4];
+      const spriteY = this.oamData[i * 4 + 3];
+      this.buildSpritePixelsForSprite(tile, data, spriteX, spriteY, i === 63);
+    }
+  }
+
+  static getNewSpritePixelTable() {
+    return new Array(240).fill(null).map(() => new Array(256).fill(null));
+  }
+
+  buildSpritePixelsForSprite(
+    tile: Tile,
+    data: SpriteData,
+    spriteY: number,
+    spriteX: number,
+    clear: boolean
+  ) {
+    for (let tileY = 0; tileY < 8; tileY++) {
+      for (let tileX = 0; tileX < 8; tileX++) {
+        const value = tile.getPixel(tileY, tileX, data.orientation);
+        const screenY = spriteY + tileY;
+        const screenX = spriteX + tileX;
+        if (screenX < 255 && screenY < 240) {
+          if (clear) this.spritePixels[screenY][screenX] = null;
+          // implement the simple version first. no checks for any hiddens
+          this.spritePixels[screenY][screenX] = {
+            value,
+            hide: data.behindBackground,
+            palette: data.paletteIndex,
+          };
+        }
       }
     }
-    return null;
   }
 
   getSpriteData(byte: number): SpriteData {
@@ -141,10 +159,6 @@ class PPU {
       paletteIndex: byte & 0b0000_0011,
       behindBackground: !!(byte & 0b0001_0000),
     };
-  }
-
-  isInRange(screen: number, sprite: number) {
-    return screen >= sprite && screen <= sprite + 7;
   }
 
   setupPatternTables() {
