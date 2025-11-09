@@ -1,11 +1,15 @@
 import Cartridge from "../cartridge";
+import fs from "fs";
+import path from "path";
 import { CPU_INSTRUCTION } from "../enums";
 import Execute from "../execute";
 import RAM from "../ram";
 import Registers from "../registers";
 
 const getCartridge = () => {
-  return new Cartridge("./nesemu/nestest.nes");
+  return new Cartridge(
+    fs.readFileSync(path.join(__dirname, "../games/nestest.nes"))
+  );
 };
 
 export interface TestRegisters {
@@ -71,7 +75,7 @@ export const getRegisters = (init?: TestRegisters) => {
   "zero" in init && init.zero !== undefined && init.zero
     ? reg.setZero()
     : reg.clearZero();
-  "negative" in init && init.negative !== undefined && !init.negative
+  "negative" in init && init.negative !== undefined && init.negative
     ? reg.setNegative()
     : reg.clearNegative();
   return reg;

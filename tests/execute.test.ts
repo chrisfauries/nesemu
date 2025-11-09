@@ -7,6 +7,7 @@ import {
   assertOpcode,
   setup,
   checkRam,
+  TestRegisters,
 } from "./utils";
 
 describe("Increment Instructions", () => {
@@ -1664,7 +1665,7 @@ describe.each<[StoreRegisterInputs]>([
     const reg = getRegisters({ x: regVal, y: 0x03 });
     const run = setup(ram, reg);
     run.execute(CPU_INSTRUCTION.STX_ZY);
-    checkReg(reg, { x: result, pc: 2 });
+    checkReg(reg, { x: regVal, pc: 2 }); // STX_ZY doesn't modify X
     checkRam(ram, { 0x08: result });
 
     // Wrap (TODO: Move this)
@@ -1757,7 +1758,7 @@ describe.each<[TransferRegisterInputs]>([
     const reg = getRegisters({ a: regOut, x: regIn });
     const run = setup(ram, reg);
     run.execute(CPU_INSTRUCTION.TAX);
-    checkReg(reg, { a: regOut, x: regOut });
+    checkReg(reg, { a: regOut, x: regOut, pc: 1 });
     checkFlags(reg, { zero, negative });
   });
   test("TAY", () => {
@@ -1767,7 +1768,7 @@ describe.each<[TransferRegisterInputs]>([
     const reg = getRegisters({ a: regOut, y: regIn });
     const run = setup(ram, reg);
     run.execute(CPU_INSTRUCTION.TAY);
-    checkReg(reg, { a: regOut, y: regOut });
+    checkReg(reg, { a: regOut, y: regOut, pc: 1 });
     checkFlags(reg, { zero, negative });
   });
   test("TSX", () => {
@@ -1777,7 +1778,7 @@ describe.each<[TransferRegisterInputs]>([
     const reg = getRegisters({ stackPointer: regOut, x: regIn });
     const run = setup(ram, reg);
     run.execute(CPU_INSTRUCTION.TSX);
-    checkReg(reg, { stackPointer: regOut, x: regOut });
+    checkReg(reg, { stackPointer: regOut, x: regOut, pc: 1 });
     checkFlags(reg, { zero, negative });
   });
   test("TXA", () => {
@@ -1787,7 +1788,7 @@ describe.each<[TransferRegisterInputs]>([
     const reg = getRegisters({ x: regOut, a: regIn });
     const run = setup(ram, reg);
     run.execute(CPU_INSTRUCTION.TXA);
-    checkReg(reg, { x: regOut, a: regOut });
+    checkReg(reg, { x: regOut, a: regOut, pc: 1 });
     checkFlags(reg, { zero, negative });
   });
   test("TXS", () => {
@@ -1797,7 +1798,9 @@ describe.each<[TransferRegisterInputs]>([
     const reg = getRegisters({ x: regOut, stackPointer: regIn });
     const run = setup(ram, reg);
     run.execute(CPU_INSTRUCTION.TXS);
-    checkReg(reg, { x: regOut, stackPointer: regOut });
+    checkReg(reg, { x: regOut, stackPointer: regOut, pc: 1 });
+    // TXS does not update flags
+    checkFlags(reg, { zero, negative });
   });
   test("TYA", () => {
     const opcode = 0x98;
@@ -1806,13 +1809,1465 @@ describe.each<[TransferRegisterInputs]>([
     const reg = getRegisters({ y: regOut, a: regIn });
     const run = setup(ram, reg);
     run.execute(CPU_INSTRUCTION.TYA);
-    checkReg(reg, { y: regOut, a: regOut });
+    checkReg(reg, { y: regOut, a: regOut, pc: 1 });
     checkFlags(reg, { zero, negative });
   });
 });
 
-describe("Comparison Instructions", () => {});
-describe("Branch Register Instructions", () => {});
+interface ArithmeticTestCases {
+  a: number;
+  m: number;
+  cIn: boolean;
+  result: number;
+  cOut: boolean;
+  v: boolean;
+  z: boolean;
+  n: boolean;
+}
+
+describe("Arithmetic Instructions", () => {
+  describe.each<[ArithmeticTestCases]>([
+    // ADC Cases
+    // Simple add
+    [
+      {
+        a: 0x10,
+        m: 0x10,
+        cIn: false,
+        result: 0x20,
+        cOut: false,
+        v: false,
+        z: false,
+        n: false,
+      },
+    ],
+    // Simple add with carry in
+    [
+      {
+        a: 0x10,
+        m: 0x10,
+        cIn: true,
+        result: 0x21,
+        cOut: false,
+        v: false,
+        z: false,
+        n: false,
+      },
+    ],
+    // 6th bit carry (overflow)
+    [
+      {
+        a: 0x40,
+        m: 0x40,
+        cIn: false,
+        result: 0x80,
+        cOut: false,
+        v: false,
+        z: false,
+        n: true,
+      },
+    ],
+    // 6th bit carry (overflow) with carry in
+    [
+      {
+        a: 0x40,
+        m: 0x3f,
+        cIn: true,
+        result: 0x80,
+        cOut: false,
+        v: false,
+        z: false,
+        n: true,
+      },
+    ],
+    // 7th bit carry (carry out)
+    [
+      {
+        a: 0x80,
+        m: 0x80,
+        cIn: false,
+        result: 0x00,
+        cOut: true,
+        v: false,
+        z: true,
+        n: false,
+      },
+    ],
+    // 7th bit carry (carry out) with carry in
+    [
+      {
+        a: 0x80,
+        m: 0x7f,
+        cIn: true,
+        result: 0x00,
+        cOut: true,
+        v: false,
+        z: true,
+        n: false,
+      },
+    ],
+    // 6 & 7 bit carry
+    [
+      {
+        a: 0xc0,
+        m: 0xc0,
+        cIn: false,
+        result: 0x80,
+        cOut: true,
+        v: false,
+        z: false,
+        n: true,
+      },
+    ],
+    // 6 & 7 bit carry with carry in
+    [
+      {
+        a: 0xc0,
+        m: 0xbf,
+        cIn: true,
+        result: 0x80,
+        cOut: true,
+        v: false,
+        z: false,
+        n: true,
+      },
+    ],
+  ])(
+    "ADC",
+    ({ a, m, cIn, result, cOut, v, z, n }) => {
+      test(`ADC_I: ${a.toString(16)}+${m.toString(16)}+${
+        cIn ? 1 : 0
+      }`, () => {
+        assertOpcode("ADC_I", 0x69);
+        const ram = getRam({ 0x00: 0x69, 0x01: m });
+        const reg = getRegisters({ a: a, carry: cIn });
+        const run = setup(ram, reg);
+        run.execute(CPU_INSTRUCTION.ADC_I);
+        checkReg(reg, { a: result, pc: 2 });
+        checkFlags(reg, { carry: cOut, overflow: v, zero: z, negative: n });
+      });
+
+      test(`ADC_Z: ${a.toString(16)}+${m.toString(16)}+${
+        cIn ? 1 : 0
+      }`, () => {
+        assertOpcode("ADC_Z", 0x65);
+        const ram = getRam({ 0x00: 0x65, 0x01: 0x10, 0x10: m });
+        const reg = getRegisters({ a: a, carry: cIn });
+        const run = setup(ram, reg);
+        run.execute(CPU_INSTRUCTION.ADC_Z);
+        checkReg(reg, { a: result, pc: 2 });
+        checkFlags(reg, { carry: cOut, overflow: v, zero: z, negative: n });
+      });
+
+      test(`ADC_ZX: ${a.toString(16)}+${m.toString(16)}+${
+        cIn ? 1 : 0
+      }`, () => {
+        assertOpcode("ADC_ZX", 0x75);
+        const ram = getRam({ 0x00: 0x75, 0x01: 0x10, 0x12: m });
+        const reg = getRegisters({ a: a, x: 0x02, carry: cIn });
+        const run = setup(ram, reg);
+        run.execute(CPU_INSTRUCTION.ADC_ZX);
+        checkReg(reg, { a: result, pc: 2 });
+        checkFlags(reg, { carry: cOut, overflow: v, zero: z, negative: n });
+      });
+
+      test(`ADC_A: ${a.toString(16)}+${m.toString(16)}+${
+        cIn ? 1 : 0
+      }`, () => {
+        assertOpcode("ADC_A", 0x6d);
+        const ram = getRam({ 0x00: 0x6d, 0x01: 0x34, 0x02: 0x12, 0x1234: m });
+        const reg = getRegisters({ a: a, carry: cIn });
+        const run = setup(ram, reg);
+        run.execute(CPU_INSTRUCTION.ADC_A);
+        checkReg(reg, { a: result, pc: 3 });
+        checkFlags(reg, { carry: cOut, overflow: v, zero: z, negative: n });
+      });
+
+      test(`ADC_AX: ${a.toString(16)}+${m.toString(16)}+${
+        cIn ? 1 : 0
+      }`, () => {
+        assertOpcode("ADC_AX", 0x7d);
+        const ram = getRam({ 0x00: 0x7d, 0x01: 0x34, 0x02: 0x12, 0x1239: m });
+        const reg = getRegisters({ a: a, x: 0x05, carry: cIn });
+        const run = setup(ram, reg);
+        run.execute(CPU_INSTRUCTION.ADC_AX);
+        checkReg(reg, { a: result, pc: 3 });
+        checkFlags(reg, { carry: cOut, overflow: v, zero: z, negative: n });
+      });
+
+      test(`ADC_AY: ${a.toString(16)}+${m.toString(16)}+${
+        cIn ? 1 : 0
+      }`, () => {
+        assertOpcode("ADC_AY", 0x79);
+        const ram = getRam({ 0x00: 0x79, 0x01: 0x34, 0x02: 0x12, 0x1239: m });
+        const reg = getRegisters({ a: a, y: 0x05, carry: cIn });
+        const run = setup(ram, reg);
+        run.execute(CPU_INSTRUCTION.ADC_AY);
+        checkReg(reg, { a: result, pc: 3 });
+        checkFlags(reg, { carry: cOut, overflow: v, zero: z, negative: n });
+      });
+
+      test(`ADC_IX: ${a.toString(16)}+${m.toString(16)}+${
+        cIn ? 1 : 0
+      }`, () => {
+        assertOpcode("ADC_IX", 0x61);
+        const ram = getRam({
+          0x00: 0x61,
+          0x01: 0x10,
+          0x12: 0x34,
+          0x13: 0x12,
+          0x1234: m,
+        });
+        const reg = getRegisters({ a: a, x: 0x02, carry: cIn });
+        const run = setup(ram, reg);
+        run.execute(CPU_INSTRUCTION.ADC_IX);
+        checkReg(reg, { a: result, pc: 2 });
+        checkFlags(reg, { carry: cOut, overflow: v, zero: z, negative: n });
+      });
+
+      test(`ADC_IY: ${a.toString(16)}+${m.toString(16)}+${
+        cIn ? 1 : 0
+      }`, () => {
+        assertOpcode("ADC_IY", 0x71);
+        const ram = getRam({
+          0x00: 0x71,
+          0x01: 0x10,
+          0x10: 0x34,
+          0x11: 0x12,
+          0x1239: m,
+        });
+        const reg = getRegisters({ a: a, y: 0x05, carry: cIn });
+        const run = setup(ram, reg);
+        run.execute(CPU_INSTRUCTION.ADC_IY);
+        checkReg(reg, { a: result, pc: 2 });
+        checkFlags(reg, { carry: cOut, overflow: v, zero: z, negative: n });
+      });
+    }
+  );
+
+  describe.each<[ArithmeticTestCases]>([
+    // SBC Cases (A + ~M + C)
+    // 0x10 - 0x10, C=1 (0x10 + 0xEF + 1)
+    [
+      {
+        a: 0x10,
+        m: 0x10,
+        cIn: true,
+        result: 0x00,
+        cOut: true,
+        v: false,
+        z: true,
+        n: false,
+      },
+    ],
+    // 0x10 - 0x10, C=0 (0x10 + 0xEF + 0)
+    [
+      {
+        a: 0x10,
+        m: 0x10,
+        cIn: false,
+        result: 0xff,
+        cOut: false,
+        v: false,
+        z: false,
+        n: true,
+      },
+    ],
+    // 0x80 - 0x01, C=1 (0x80 + 0xFE + 1) -> 0x7F, V=1
+    [
+      {
+        a: 0x80,
+        m: 0x01,
+        cIn: true,
+        result: 0x7f,
+        cOut: true,
+        v: true,
+        z: false,
+        n: false,
+      },
+    ],
+    // 0x01 - 0x80, C=1 (0x01 + 0x7F + 1) -> 0x81, V=1
+    [
+      {
+        a: 0x01,
+        m: 0x80,
+        cIn: true,
+        result: 0x81,
+        cOut: false,
+        v: true,
+        z: false,
+        n: true,
+      },
+    ],
+    // 0x00 - 0x01, C=0 (0x00 + 0xFE + 0)
+    [
+      {
+        a: 0x00,
+        m: 0x01,
+        cIn: false,
+        result: 0xfe,
+        cOut: false,
+        v: false,
+        z: false,
+        n: true,
+      },
+    ],
+  ])(
+    "SBC",
+    ({ a, m, cIn, result, cOut, v, z, n }) => {
+      test(`SBC_I: ${a.toString(16)}-${m.toString(16)}-${
+        cIn ? 0 : 1
+      }`, () => {
+        assertOpcode("SBC_I", 0xe9);
+        const ram = getRam({ 0x00: 0xe9, 0x01: m });
+        const reg = getRegisters({ a: a, carry: cIn });
+        const run = setup(ram, reg);
+        run.execute(CPU_INSTRUCTION.SBC_I);
+        checkReg(reg, { a: result, pc: 2 });
+        checkFlags(reg, { carry: cOut, overflow: v, zero: z, negative: n });
+      });
+
+      test(`SBC_Z: ${a.toString(16)}-${m.toString(16)}-${
+        cIn ? 0 : 1
+      }`, () => {
+        assertOpcode("SBC_Z", 0xe5);
+        const ram = getRam({ 0x00: 0xe5, 0x01: 0x10, 0x10: m });
+        const reg = getRegisters({ a: a, carry: cIn });
+        const run = setup(ram, reg);
+        run.execute(CPU_INSTRUCTION.SBC_Z);
+        checkReg(reg, { a: result, pc: 2 });
+        checkFlags(reg, { carry: cOut, overflow: v, zero: z, negative: n });
+      });
+
+      test(`SBC_ZX: ${a.toString(16)}-${m.toString(16)}-${
+        cIn ? 0 : 1
+      }`, () => {
+        assertOpcode("SBC_ZX", 0xf5);
+        const ram = getRam({ 0x00: 0xf5, 0x01: 0x10, 0x12: m });
+        const reg = getRegisters({ a: a, x: 0x02, carry: cIn });
+        const run = setup(ram, reg);
+        run.execute(CPU_INSTRUCTION.SBC_ZX);
+        checkReg(reg, { a: result, pc: 2 });
+        checkFlags(reg, { carry: cOut, overflow: v, zero: z, negative: n });
+      });
+
+      test(`SBC_A: ${a.toString(16)}-${m.toString(16)}-${
+        cIn ? 0 : 1
+      }`, () => {
+        assertOpcode("SBC_A", 0xed);
+        const ram = getRam({ 0x00: 0xed, 0x01: 0x34, 0x02: 0x12, 0x1234: m });
+        const reg = getRegisters({ a: a, carry: cIn });
+        const run = setup(ram, reg);
+        run.execute(CPU_INSTRUCTION.SBC_A);
+        checkReg(reg, { a: result, pc: 3 });
+        checkFlags(reg, { carry: cOut, overflow: v, zero: z, negative: n });
+      });
+
+      test(`SBC_AX: ${a.toString(16)}-${m.toString(16)}-${
+        cIn ? 0 : 1
+      }`, () => {
+        assertOpcode("SBC_AX", 0xfd);
+        const ram = getRam({ 0x00: 0xfd, 0x01: 0x34, 0x02: 0x12, 0x1239: m });
+        const reg = getRegisters({ a: a, x: 0x05, carry: cIn });
+        const run = setup(ram, reg);
+        run.execute(CPU_INSTRUCTION.SBC_AX);
+        checkReg(reg, { a: result, pc: 3 });
+        checkFlags(reg, { carry: cOut, overflow: v, zero: z, negative: n });
+      });
+
+      test(`SBC_AY: ${a.toString(16)}-${m.toString(16)}-${
+        cIn ? 0 : 1
+      }`, () => {
+        assertOpcode("SBC_AY", 0xf9);
+        const ram = getRam({ 0x00: 0xf9, 0x01: 0x34, 0x02: 0x12, 0x1239: m });
+        const reg = getRegisters({ a: a, y: 0x05, carry: cIn });
+        const run = setup(ram, reg);
+        run.execute(CPU_INSTRUCTION.SBC_AY);
+        checkReg(reg, { a: result, pc: 3 });
+        checkFlags(reg, { carry: cOut, overflow: v, zero: z, negative: n });
+      });
+
+      test(`SBC_IX: ${a.toString(16)}-${m.toString(16)}-${
+        cIn ? 0 : 1
+      }`, () => {
+        assertOpcode("SBC_IX", 0xe1);
+        const ram = getRam({
+          0x00: 0xe1,
+          0x01: 0x10,
+          0x12: 0x34,
+          0x13: 0x12,
+          0x1234: m,
+        });
+        const reg = getRegisters({ a: a, x: 0x02, carry: cIn });
+        const run = setup(ram, reg);
+        run.execute(CPU_INSTRUCTION.SBC_IX);
+        checkReg(reg, { a: result, pc: 2 });
+        checkFlags(reg, { carry: cOut, overflow: v, zero: z, negative: n });
+      });
+
+      test(`SBC_IY: ${a.toString(16)}-${m.toString(16)}-${
+        cIn ? 0 : 1
+      }`, () => {
+        assertOpcode("SBC_IY", 0xf1);
+        const ram = getRam({
+          0x00: 0xf1,
+          0x01: 0x10,
+          0x10: 0x34,
+          0x11: 0x12,
+          0x1239: m,
+        });
+        const reg = getRegisters({ a: a, y: 0x05, carry: cIn });
+        const run = setup(ram, reg);
+        run.execute(CPU_INSTRUCTION.SBC_IY);
+        checkReg(reg, { a: result, pc: 2 });
+        checkFlags(reg, { carry: cOut, overflow: v, zero: z, negative: n });
+      });
+    }
+  );
+});
+
+interface CompareTestCases {
+  r: number;
+  m: number;
+  c: boolean;
+  z: boolean;
+  n: boolean;
+}
+
+describe("Comparison Instructions", () => {
+  describe.each<[CompareTestCases]>([
+    // R > M
+    [{ r: 0x10, m: 0x05, c: true, z: false, n: false }],
+    // R == M
+    [{ r: 0x10, m: 0x10, c: true, z: true, n: false }],
+    // R < M
+    [{ r: 0x10, m: 0x20, c: false, z: false, n: true }],
+    // R < M (negative wrap)
+    [{ r: 0x00, m: 0x01, c: false, z: false, n: true }],
+  ])("CMP", ({ r, m, c, z, n }) => {
+    test(`CMP_I: ${r.toString(16)} vs ${m.toString(16)}`, () => {
+      assertOpcode("CMP_I", 0xc9);
+      const ram = getRam({ 0x00: 0xc9, 0x01: m });
+      const reg = getRegisters({ a: r });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.CMP_I);
+      checkReg(reg, { a: r, pc: 2 });
+      checkFlags(reg, { carry: c, zero: z, negative: n });
+    });
+
+    test(`CMP_Z: ${r.toString(16)} vs ${m.toString(16)}`, () => {
+      assertOpcode("CMP_Z", 0xc5);
+      const ram = getRam({ 0x00: 0xc5, 0x01: 0x10, 0x10: m });
+      const reg = getRegisters({ a: r });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.CMP_Z);
+      checkReg(reg, { a: r, pc: 2 });
+      checkFlags(reg, { carry: c, zero: z, negative: n });
+    });
+
+    test(`CMP_ZX: ${r.toString(16)} vs ${m.toString(16)}`, () => {
+      assertOpcode("CMP_ZX", 0xd5);
+      const ram = getRam({ 0x00: 0xd5, 0x01: 0x10, 0x12: m });
+      const reg = getRegisters({ a: r, x: 0x02 });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.CMP_ZX);
+      checkReg(reg, { a: r, pc: 2 });
+      checkFlags(reg, { carry: c, zero: z, negative: n });
+    });
+
+    test(`CMP_A: ${r.toString(16)} vs ${m.toString(16)}`, () => {
+      assertOpcode("CMP_A", 0xcd);
+      const ram = getRam({ 0x00: 0xcd, 0x01: 0x34, 0x02: 0x12, 0x1234: m });
+      const reg = getRegisters({ a: r });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.CMP_A);
+      checkReg(reg, { a: r, pc: 3 });
+      checkFlags(reg, { carry: c, zero: z, negative: n });
+    });
+
+    test(`CMP_AX: ${r.toString(16)} vs ${m.toString(16)}`, () => {
+      assertOpcode("CMP_AX", 0xdd);
+      const ram = getRam({ 0x00: 0xdd, 0x01: 0x34, 0x02: 0x12, 0x1239: m });
+      const reg = getRegisters({ a: r, x: 0x05 });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.CMP_AX);
+      checkReg(reg, { a: r, pc: 3 });
+      checkFlags(reg, { carry: c, zero: z, negative: n });
+    });
+
+    test(`CMP_AY: ${r.toString(16)} vs ${m.toString(16)}`, () => {
+      assertOpcode("CMP_AY", 0xd9);
+      const ram = getRam({ 0x00: 0xd9, 0x01: 0x34, 0x02: 0x12, 0x1239: m });
+      const reg = getRegisters({ a: r, y: 0x05 });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.CMP_AY);
+      checkReg(reg, { a: r, pc: 3 });
+      checkFlags(reg, { carry: c, zero: z, negative: n });
+    });
+
+    test(`CMP_IX: ${r.toString(16)} vs ${m.toString(16)}`, () => {
+      assertOpcode("CMP_IX", 0xc1);
+      const ram = getRam({
+        0x00: 0xc1,
+        0x01: 0x10,
+        0x12: 0x34,
+        0x13: 0x12,
+        0x1234: m,
+      });
+      const reg = getRegisters({ a: r, x: 0x02 });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.CMP_IX);
+      checkReg(reg, { a: r, pc: 2 });
+      checkFlags(reg, { carry: c, zero: z, negative: n });
+    });
+
+    test(`CMP_IY: ${r.toString(16)} vs ${m.toString(16)}`, () => {
+      assertOpcode("CMP_IY", 0xd1);
+      const ram = getRam({
+        0x00: 0xd1,
+        0x01: 0x10,
+        0x10: 0x34,
+        0x11: 0x12,
+        0x1239: m,
+      });
+      const reg = getRegisters({ a: r, y: 0x05 });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.CMP_IY);
+      checkReg(reg, { a: r, pc: 2 });
+      checkFlags(reg, { carry: c, zero: z, negative: n });
+    });
+  });
+
+  describe.each<[CompareTestCases]>([
+    // R > M
+    [{ r: 0x10, m: 0x05, c: true, z: false, n: false }],
+    // R == M
+    [{ r: 0x10, m: 0x10, c: true, z: true, n: false }],
+    // R < M
+    [{ r: 0x10, m: 0x20, c: false, z: false, n: true }],
+  ])("CPX", ({ r, m, c, z, n }) => {
+    test(`CPX_I: ${r.toString(16)} vs ${m.toString(16)}`, () => {
+      assertOpcode("CPX_I", 0xe0);
+      const ram = getRam({ 0x00: 0xe0, 0x01: m });
+      const reg = getRegisters({ x: r });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.CPX_I);
+      checkReg(reg, { x: r, pc: 2 });
+      checkFlags(reg, { carry: c, zero: z, negative: n });
+    });
+
+    test(`CPX_Z: ${r.toString(16)} vs ${m.toString(16)}`, () => {
+      assertOpcode("CPX_Z", 0xe4);
+      const ram = getRam({ 0x00: 0xe4, 0x01: 0x10, 0x10: m });
+      const reg = getRegisters({ x: r });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.CPX_Z);
+      checkReg(reg, { x: r, pc: 2 });
+      checkFlags(reg, { carry: c, zero: z, negative: n });
+    });
+
+    test(`CPX_A: ${r.toString(16)} vs ${m.toString(16)}`, () => {
+      assertOpcode("CPX_A", 0xec);
+      const ram = getRam({ 0x00: 0xec, 0x01: 0x34, 0x02: 0x12, 0x1234: m });
+      const reg = getRegisters({ x: r });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.CPX_A);
+      checkReg(reg, { x: r, pc: 3 });
+      checkFlags(reg, { carry: c, zero: z, negative: n });
+    });
+  });
+
+  describe.each<[CompareTestCases]>([
+    // R > M
+    [{ r: 0x10, m: 0x05, c: true, z: false, n: false }],
+    // R == M
+    [{ r: 0x10, m: 0x10, c: true, z: true, n: false }],
+    // R < M
+    [{ r: 0x10, m: 0x20, c: false, z: false, n: true }],
+  ])("CPY", ({ r, m, c, z, n }) => {
+    test(`CPY_I: ${r.toString(16)} vs ${m.toString(16)}`, () => {
+      assertOpcode("CPY_I", 0xc0);
+      const ram = getRam({ 0x00: 0xc0, 0x01: m });
+      const reg = getRegisters({ y: r });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.CPY_I);
+      checkReg(reg, { y: r, pc: 2 });
+      checkFlags(reg, { carry: c, zero: z, negative: n });
+    });
+
+    test(`CPY_Z: ${r.toString(16)} vs ${m.toString(16)}`, () => {
+      assertOpcode("CPY_Z", 0xc4);
+      const ram = getRam({ 0x00: 0xc4, 0x01: 0x10, 0x10: m });
+      const reg = getRegisters({ y: r });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.CPY_Z);
+      checkReg(reg, { y: r, pc: 2 });
+      checkFlags(reg, { carry: c, zero: z, negative: n });
+    });
+
+    test(`CPY_A: ${r.toString(16)} vs ${m.toString(16)}`, () => {
+      assertOpcode("CPY_A", 0xcc);
+      const ram = getRam({ 0x00: 0xcc, 0x01: 0x34, 0x02: 0x12, 0x1234: m });
+      const reg = getRegisters({ y: r });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.CPY_A);
+      checkReg(reg, { y: r, pc: 3 });
+      checkFlags(reg, { carry: c, zero: z, negative: n });
+    });
+  });
+});
+
+describe("Stack Register Instructions", () => {
+  test("PHA", () => {
+    assertOpcode("PHA", 0x48);
+    const ram = getRam();
+    const reg = getRegisters({ a: 0xab, stackPointer: 0xff });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.PHA);
+    checkReg(reg, { pc: 1, stackPointer: 0xfe });
+    checkRam(ram, { 0x01ff: 0xab });
+  });
+
+  test("PHP", () => {
+    assertOpcode("PHP", 0x08);
+    const ram = getRam();
+    // P = 10001101 (N=1, V=0, D=0, I=0, Z=1, C=1)
+    const reg = getRegisters({
+      stackPointer: 0xff,
+      negative: true,
+      overflow: false,
+      decimal: false,
+      interrupt: false,
+      zero: true,
+      carry: true,
+    });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.PHP);
+    checkReg(reg, { pc: 1, stackPointer: 0xfe });
+    // Pushes 10111101 (Bits 4 and 5 are set)
+    checkRam(ram, { 0x01ff: 0xbd });
+  });
+
+  test("PLA", () => {
+    assertOpcode("PLA", 0x68);
+    const ram = getRam({ 0x01ff: 0xab });
+    const reg = getRegisters({ a: 0x00, stackPointer: 0xfe });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.PLA);
+    checkReg(reg, { a: 0xab, pc: 1, stackPointer: 0xff });
+    checkFlags(reg, { zero: false, negative: true });
+
+    // Check zero flag
+    ram.set8(0x01ff, 0x00);
+    reg.setStackPointer(0xfe);
+    run.execute(CPU_INSTRUCTION.PLA);
+    checkReg(reg, { a: 0x00, pc: 2, stackPointer: 0xff });
+    checkFlags(reg, { zero: true, negative: false });
+  });
+
+  test("PLP", () => {
+    assertOpcode("PLP", 0x28);
+    // 10101101 (N=1, V=0, D=0, I=0, Z=1, C=1)
+    // Bits 4 and 5 should be ignored
+    const ram = getRam({ 0x01ff: 0xad });
+    const reg = getRegisters({ stackPointer: 0xfe });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.PLP);
+    checkReg(reg, { pc: 1, stackPointer: 0xff });
+    checkFlags(reg, {
+      negative: true,
+      overflow: false,
+      decimal: false,
+      interrupt: false,
+      zero: true,
+      carry: true,
+    });
+  });
+});
+
+describe("Branch Register Instructions", () => {
+  // offset 0x0A (10)
+  test("BCC - Branch", () => {
+    assertOpcode("BCC", 0x90);
+    const ram = getRam({ 0x00: 0x90, 0x01: 0x0a });
+    const reg = getRegisters({ pc: 0x00, carry: false });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.BCC);
+    checkReg(reg, { pc: 0x0c }); // 0x00 + 2 + 0x0a
+  });
+
+  test("BCC - No Branch", () => {
+    assertOpcode("BCC", 0x90);
+    const ram = getRam({ 0x00: 0x90, 0x01: 0x0a });
+    const reg = getRegisters({ pc: 0x00, carry: true });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.BCC);
+    checkReg(reg, { pc: 0x02 }); // 0x00 + 2
+  });
+
+  // offset 0xF6 (-10)
+  test("BCS - Branch", () => {
+    assertOpcode("BCS", 0xb0);
+    const ram = getRam({ 0x00: 0xb0, 0x01: 0xf6 });
+    const reg = getRegisters({ pc: 0x00, carry: true });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.BCS);
+    checkReg(reg, { pc: 0xf8 }); // 0x00 + 2 - 10
+  });
+
+  test("BCS - No Branch", () => {
+    assertOpcode("BCS", 0xb0);
+    const ram = getRam({ 0x00: 0xb0, 0x01: 0xf6 });
+    const reg = getRegisters({ pc: 0x00, carry: false });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.BCS);
+    checkReg(reg, { pc: 0x02 }); // 0x00 + 2
+  });
+
+  test("BEQ - Branch", () => {
+    assertOpcode("BEQ", 0xf0);
+    const ram = getRam({ 0x00: 0xf0, 0x01: 0x0a });
+    const reg = getRegisters({ pc: 0x00, zero: true });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.BEQ);
+    checkReg(reg, { pc: 0x0c }); // 0x00 + 2 + 0x0a
+  });
+
+  test("BEQ - No Branch", () => {
+    assertOpcode("BEQ", 0xf0);
+    const ram = getRam({ 0x00: 0xf0, 0x01: 0x0a });
+    const reg = getRegisters({ pc: 0x00, zero: false });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.BEQ);
+    checkReg(reg, { pc: 0x02 }); // 0x00 + 2
+  });
+
+  test("BNE - Branch", () => {
+    assertOpcode("BNE", 0xd0);
+    const ram = getRam({ 0x00: 0xd0, 0x01: 0x0a });
+    const reg = getRegisters({ pc: 0x00, zero: false });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.BNE);
+    checkReg(reg, { pc: 0x0c }); // 0x00 + 2 + 0x0a
+  });
+
+  test("BNE - No Branch", () => {
+    assertOpcode("BNE", 0xd0);
+    const ram = getRam({ 0x00: 0xd0, 0x01: 0x0a });
+    const reg = getRegisters({ pc: 0x00, zero: true });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.BNE);
+    checkReg(reg, { pc: 0x02 }); // 0x00 + 2
+  });
+
+  test("BMI - Branch", () => {
+    assertOpcode("BMI", 0x30);
+    const ram = getRam({ 0x00: 0x30, 0x01: 0x0a });
+    const reg = getRegisters({ pc: 0x00, negative: true });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.BMI);
+    checkReg(reg, { pc: 0x0c }); // 0x00 + 2 + 0x0a
+  });
+
+  test("BMI - No Branch", () => {
+    assertOpcode("BMI", 0x30);
+    const ram = getRam({ 0x00: 0x30, 0x01: 0x0a });
+    const reg = getRegisters({ pc: 0x00, negative: false });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.BMI);
+    checkReg(reg, { pc: 0x02 }); // 0x00 + 2
+  });
+
+  test("BPL - Branch", () => {
+    assertOpcode("BPL", 0x10);
+    const ram = getRam({ 0x00: 0x10, 0x01: 0x0a });
+    const reg = getRegisters({ pc: 0x00, negative: false });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.BPL);
+    checkReg(reg, { pc: 0x0c }); // 0x00 + 2 + 0x0a
+  });
+
+  test("BPL - No Branch", () => {
+    assertOpcode("BPL", 0x10);
+    const ram = getRam({ 0x00: 0x10, 0x01: 0x0a });
+    const reg = getRegisters({ pc: 0x00, negative: true });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.BPL);
+    checkReg(reg, { pc: 0x02 }); // 0x00 + 2
+  });
+
+  test("BVC - Branch", () => {
+    assertOpcode("BVC", 0x50);
+    const ram = getRam({ 0x00: 0x50, 0x01: 0x0a });
+    const reg = getRegisters({ pc: 0x00, overflow: false });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.BVC);
+    checkReg(reg, { pc: 0x0c }); // 0x00 + 2 + 0x0a
+  });
+
+  test("BVC - No Branch", () => {
+    assertOpcode("BVC", 0x50);
+    const ram = getRam({ 0x00: 0x50, 0x01: 0x0a });
+    const reg = getRegisters({ pc: 0x00, overflow: true });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.BVC);
+    checkReg(reg, { pc: 0x02 }); // 0x00 + 2
+  });
+
+  test("BVS - Branch", () => {
+    assertOpcode("BVS", 0x70);
+    const ram = getRam({ 0x00: 0x70, 0x01: 0x0a });
+    const reg = getRegisters({ pc: 0x00, overflow: true });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.BVS);
+    checkReg(reg, { pc: 0x0c }); // 0x00 + 2 + 0x0a
+  });
+
+  test("BVS - No Branch", () => {
+    assertOpcode("BVS", 0x70);
+    const ram = getRam({ 0x00: 0x70, 0x01: 0x0a });
+    const reg = getRegisters({ pc: 0x00, overflow: false });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.BVS);
+    checkReg(reg, { pc: 0x02 }); // 0x00 + 2
+  });
+});
+
+interface ShiftTestCases {
+  in: number;
+  cIn: boolean;
+  out: number;
+  cOut: boolean;
+  z: boolean;
+  n: boolean;
+}
+
+describe("Shift & Rotate Instructions", () => {
+  describe.each<[ShiftTestCases]>([
+    // 01010101 -> 10101010, C=0
+    [
+      {
+        in: 0x55,
+        cIn: false,
+        out: 0xaa,
+        cOut: false,
+        z: false,
+        n: true,
+      },
+    ],
+    // 10101010 -> 01010100, C=1
+    [
+      {
+        in: 0xaa,
+        cIn: false,
+        out: 0x54,
+        cOut: true,
+        z: false,
+        n: false,
+      },
+    ],
+    // 00000000 -> 00000000, C=0
+    [{ in: 0x00, cIn: false, out: 0x00, cOut: false, z: true, n: false }],
+    // 10000000 -> 00000000, C=1
+    [{ in: 0x80, cIn: false, out: 0x00, cOut: true, z: true, n: false }],
+  ])("ASL", ({ in: valIn, cIn, out, cOut, z, n }) => {
+    test(`ASL_ACC: ${valIn.toString(16)}`, () => {
+      assertOpcode("ASL_ACC", 0x0a);
+      const ram = getRam({ 0x00: 0x0a });
+      const reg = getRegisters({ a: valIn, carry: cIn }); // cIn has no effect
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.ASL_ACC);
+      checkReg(reg, { a: out, pc: 1 });
+      checkFlags(reg, { carry: cOut, zero: z, negative: n });
+    });
+
+    test(`ASL_Z: ${valIn.toString(16)}`, () => {
+      assertOpcode("ASL_Z", 0x06);
+      const ram = getRam({ 0x00: 0x06, 0x01: 0x10, 0x10: valIn });
+      const reg = getRegisters({ carry: cIn }); // cIn has no effect
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.ASL_Z);
+      checkRam(ram, { 0x10: out });
+      checkReg(reg, { pc: 2 });
+      checkFlags(reg, { carry: cOut, zero: z, negative: n });
+    });
+
+    test(`ASL_ZX: ${valIn.toString(16)}`, () => {
+      assertOpcode("ASL_ZX", 0x16);
+      const ram = getRam({ 0x00: 0x16, 0x01: 0x10, 0x12: valIn });
+      const reg = getRegisters({ x: 0x02, carry: cIn }); // cIn has no effect
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.ASL_ZX);
+      checkRam(ram, { 0x12: out });
+      checkReg(reg, { pc: 2 });
+      checkFlags(reg, { carry: cOut, zero: z, negative: n });
+    });
+
+    test(`ASL_A: ${valIn.toString(16)}`, () => {
+      assertOpcode("ASL_A", 0x0e);
+      const ram = getRam({ 0x00: 0x0e, 0x01: 0x34, 0x02: 0x12, 0x1234: valIn });
+      const reg = getRegisters({ carry: cIn }); // cIn has no effect
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.ASL_A);
+      checkRam(ram, { 0x1234: out });
+      checkReg(reg, { pc: 3 });
+      checkFlags(reg, { carry: cOut, zero: z, negative: n });
+    });
+
+    test(`ASL_AX: ${valIn.toString(16)}`, () => {
+      assertOpcode("ASL_AX", 0x1e);
+      const ram = getRam({ 0x00: 0x1e, 0x01: 0x34, 0x02: 0x12, 0x1239: valIn });
+      const reg = getRegisters({ x: 0x05, carry: cIn }); // cIn has no effect
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.ASL_AX);
+      checkRam(ram, { 0x1239: out });
+      checkReg(reg, { pc: 3 });
+      checkFlags(reg, { carry: cOut, zero: z, negative: n });
+    });
+  });
+
+  describe.each<[ShiftTestCases]>([
+    // 01010101 -> 00101010, C=1
+    [
+      {
+        in: 0x55,
+        cIn: false,
+        out: 0x2a,
+        cOut: true,
+        z: false,
+        n: false,
+      },
+    ],
+    // 10101010 -> 01010101, C=0
+    [
+      {
+        in: 0xaa,
+        cIn: false,
+        out: 0x55,
+        cOut: false,
+        z: false,
+        n: false,
+      },
+    ],
+    // 00000000 -> 00000000, C=0
+    [{ in: 0x00, cIn: false, out: 0x00, cOut: false, z: true, n: false }],
+    // 00000001 -> 00000000, C=1
+    [{ in: 0x01, cIn: false, out: 0x00, cOut: true, z: true, n: false }],
+  ])("LSR", ({ in: valIn, cIn, out, cOut, z, n }) => {
+    test(`LSR_ACC: ${valIn.toString(16)}`, () => {
+      assertOpcode("LSR_ACC", 0x4a);
+      const ram = getRam({ 0x00: 0x4a });
+      const reg = getRegisters({ a: valIn, carry: cIn }); // cIn has no effect
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.LSR_ACC);
+      checkReg(reg, { a: out, pc: 1 });
+      checkFlags(reg, { carry: cOut, zero: z, negative: n });
+    });
+
+    test(`LSR_Z: ${valIn.toString(16)}`, () => {
+      assertOpcode("LSR_Z", 0x46);
+      const ram = getRam({ 0x00: 0x46, 0x01: 0x10, 0x10: valIn });
+      const reg = getRegisters({ carry: cIn }); // cIn has no effect
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.LSR_Z);
+      checkRam(ram, { 0x10: out });
+      checkReg(reg, { pc: 2 });
+      checkFlags(reg, { carry: cOut, zero: z, negative: n });
+    });
+
+    test(`LSR_ZX: ${valIn.toString(16)}`, () => {
+      assertOpcode("LSR_ZX", 0x56);
+      const ram = getRam({ 0x00: 0x56, 0x01: 0x10, 0x12: valIn });
+      const reg = getRegisters({ x: 0x02, carry: cIn }); // cIn has no effect
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.LSR_ZX);
+      checkRam(ram, { 0x12: out });
+      checkReg(reg, { pc: 2 });
+      checkFlags(reg, { carry: cOut, zero: z, negative: n });
+    });
+
+    test(`LSR_A: ${valIn.toString(16)}`, () => {
+      assertOpcode("LSR_A", 0x4e);
+      const ram = getRam({ 0x00: 0x4e, 0x01: 0x34, 0x02: 0x12, 0x1234: valIn });
+      const reg = getRegisters({ carry: cIn }); // cIn has no effect
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.LSR_A);
+      checkRam(ram, { 0x1234: out });
+      checkReg(reg, { pc: 3 });
+      checkFlags(reg, { carry: cOut, zero: z, negative: n });
+    });
+
+    test(`LSR_AX: ${valIn.toString(16)}`, () => {
+      assertOpcode("LSR_AX", 0x5e);
+      const ram = getRam({ 0x00: 0x5e, 0x01: 0x34, 0x02: 0x12, 0x1239: valIn });
+      const reg = getRegisters({ x: 0x05, carry: cIn }); // cIn has no effect
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.LSR_AX);
+      checkRam(ram, { 0x1239: out });
+      checkReg(reg, { pc: 3 });
+      checkFlags(reg, { carry: cOut, zero: z, negative: n });
+    });
+  });
+
+  describe.each<[ShiftTestCases]>([
+    // 01010101, C=0 -> 10101010, C=0
+    [
+      {
+        in: 0x55,
+        cIn: false,
+        out: 0xaa,
+        cOut: false,
+        z: false,
+        n: true,
+      },
+    ],
+    // 01010101, C=1 -> 10101011, C=0
+    [
+      {
+        in: 0x55,
+        cIn: true,
+        out: 0xab,
+        cOut: false,
+        z: false,
+        n: true,
+      },
+    ],
+    // 10101010, C=0 -> 01010100, C=1
+    [
+      {
+        in: 0xaa,
+        cIn: false,
+        out: 0x54,
+        cOut: true,
+        z: false,
+        n: false,
+      },
+    ],
+    // 10101010, C=1 -> 01010101, C=1
+    [
+      {
+        in: 0xaa,
+        cIn: true,
+        out: 0x55,
+        cOut: true,
+        z: false,
+        n: false,
+      },
+    ],
+    // 10000000, C=1 -> 00000001, C=1
+    [{ in: 0x80, cIn: true, out: 0x01, cOut: true, z: false, n: false }],
+  ])("ROL", ({ in: valIn, cIn, out, cOut, z, n }) => {
+    test(`ROL_ACC: ${valIn.toString(16)}, C_in=${cIn}`, () => {
+      assertOpcode("ROL_ACC", 0x2a);
+      const ram = getRam({ 0x00: 0x2a });
+      const reg = getRegisters({ a: valIn, carry: cIn });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.ROL_ACC);
+      checkReg(reg, { a: out, pc: 1 });
+      checkFlags(reg, { carry: cOut, zero: z, negative: n });
+    });
+
+    test(`ROL_Z: ${valIn.toString(16)}, C_in=${cIn}`, () => {
+      assertOpcode("ROL_Z", 0x26);
+      const ram = getRam({ 0x00: 0x26, 0x01: 0x10, 0x10: valIn });
+      const reg = getRegisters({ carry: cIn });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.ROL_Z);
+      checkRam(ram, { 0x10: out });
+      checkReg(reg, { pc: 2 });
+      checkFlags(reg, { carry: cOut, zero: z, negative: n });
+    });
+
+    test(`ROL_ZX: ${valIn.toString(16)}, C_in=${cIn}`, () => {
+      assertOpcode("ROL_ZX", 0x36);
+      const ram = getRam({ 0x00: 0x36, 0x01: 0x10, 0x12: valIn });
+      const reg = getRegisters({ x: 0x02, carry: cIn });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.ROL_ZX);
+      checkRam(ram, { 0x12: out });
+      checkReg(reg, { pc: 2 });
+      checkFlags(reg, { carry: cOut, zero: z, negative: n });
+    });
+
+    test(`ROL_A: ${valIn.toString(16)}, C_in=${cIn}`, () => {
+      assertOpcode("ROL_A", 0x2e);
+      const ram = getRam({ 0x00: 0x2e, 0x01: 0x34, 0x02: 0x12, 0x1234: valIn });
+      const reg = getRegisters({ carry: cIn });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.ROL_A);
+      checkRam(ram, { 0x1234: out });
+      checkReg(reg, { pc: 3 });
+      checkFlags(reg, { carry: cOut, zero: z, negative: n });
+    });
+
+    test(`ROL_AX: ${valIn.toString(16)}, C_in=${cIn}`, () => {
+      assertOpcode("ROL_AX", 0x3e);
+      const ram = getRam({ 0x00: 0x3e, 0x01: 0x34, 0x02: 0x12, 0x1239: valIn });
+      const reg = getRegisters({ x: 0x05, carry: cIn });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.ROL_AX);
+      checkRam(ram, { 0x1239: out });
+      checkReg(reg, { pc: 3 });
+      checkFlags(reg, { carry: cOut, zero: z, negative: n });
+    });
+  });
+
+  describe.each<[ShiftTestCases]>([
+    // 01010101, C=0 -> 00101010, C=1
+    [
+      {
+        in: 0x55,
+        cIn: false,
+        out: 0x2a,
+        cOut: true,
+        z: false,
+        n: false,
+      },
+    ],
+    // 01010101, C=1 -> 10101010, C=1
+    [
+      {
+        in: 0x55,
+        cIn: true,
+        out: 0xaa,
+        cOut: true,
+        z: false,
+        n: true,
+      },
+    ],
+    // 10101010, C=0 -> 01010101, C=0
+    [
+      {
+        in: 0xaa,
+        cIn: false,
+        out: 0x55,
+        cOut: false,
+        z: false,
+        n: false,
+      },
+    ],
+    // 10101010, C=1 -> 11010101, C=0
+    [
+      {
+        in: 0xaa,
+        cIn: true,
+        out: 0xd5,
+        cOut: false,
+        z: false,
+        n: true,
+      },
+    ],
+    // 00000001, C=1 -> 10000000, C=1
+    [{ in: 0x01, cIn: true, out: 0x80, cOut: true, z: false, n: true }],
+  ])("ROR", ({ in: valIn, cIn, out, cOut, z, n }) => {
+    test(`ROR_ACC: ${valIn.toString(16)}, C_in=${cIn}`, () => {
+      assertOpcode("ROR_ACC", 0x6a);
+      const ram = getRam({ 0x00: 0x6a });
+      const reg = getRegisters({ a: valIn, carry: cIn });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.ROR_ACC);
+      checkReg(reg, { a: out, pc: 1 });
+      checkFlags(reg, { carry: cOut, zero: z, negative: n });
+    });
+
+    test(`ROR_Z: ${valIn.toString(16)}, C_in=${cIn}`, () => {
+      assertOpcode("ROR_Z", 0x66);
+      const ram = getRam({ 0x00: 0x66, 0x01: 0x10, 0x10: valIn });
+      const reg = getRegisters({ carry: cIn });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.ROR_Z);
+      checkRam(ram, { 0x10: out });
+      checkReg(reg, { pc: 2 });
+      checkFlags(reg, { carry: cOut, zero: z, negative: n });
+    });
+
+    test(`ROR_ZX: ${valIn.toString(16)}, C_in=${cIn}`, () => {
+      assertOpcode("ROR_ZX", 0x76);
+      const ram = getRam({ 0x00: 0x76, 0x01: 0x10, 0x12: valIn });
+      const reg = getRegisters({ x: 0x02, carry: cIn });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.ROR_ZX);
+      checkRam(ram, { 0x12: out });
+      checkReg(reg, { pc: 2 });
+      checkFlags(reg, { carry: cOut, zero: z, negative: n });
+    });
+
+    test(`ROR_A: ${valIn.toString(16)}, C_in=${cIn}`, () => {
+      assertOpcode("ROR_A", 0x6e);
+      const ram = getRam({ 0x00: 0x6e, 0x01: 0x34, 0x02: 0x12, 0x1234: valIn });
+      const reg = getRegisters({ carry: cIn });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.ROR_A);
+      checkRam(ram, { 0x1234: out });
+      checkReg(reg, { pc: 3 });
+      checkFlags(reg, { carry: cOut, zero: z, negative: n });
+    });
+
+    test(`ROR_AX: ${valIn.toString(16)}, C_in=${cIn}`, () => {
+      assertOpcode("ROR_AX", 0x7e);
+      const ram = getRam({ 0x00: 0x7e, 0x01: 0x34, 0x02: 0x12, 0x1239: valIn });
+      const reg = getRegisters({ x: 0x05, carry: cIn });
+      const run = setup(ram, reg);
+      run.execute(CPU_INSTRUCTION.ROR_AX);
+      checkRam(ram, { 0x1239: out });
+      checkReg(reg, { pc: 3 });
+      checkFlags(reg, { carry: cOut, zero: z, negative: n });
+    });
+  });
+});
+
+describe("Jump Instructions", () => {
+  test("JMP_A", () => {
+    assertOpcode("JMP_A", 0x4c);
+    const ram = getRam({ 0x00: 0x4c, 0x01: 0x34, 0x02: 0x12 });
+    const reg = getRegisters({ pc: 0x00 });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.JMP_A);
+    checkReg(reg, { pc: 0x1234 });
+  });
+
+  test("JMP_I", () => {
+    assertOpcode("JMP_I", 0x6c);
+    const ram = getRam({
+      0x00: 0x6c,
+      0x01: 0x34,
+      0x02: 0x12,
+      0x1234: 0xcd,
+      0x1235: 0xab,
+    });
+    const reg = getRegisters({ pc: 0x00 });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.JMP_I);
+    checkReg(reg, { pc: 0xabcd });
+  });
+
+  test("JMP_I - Page Wrap Bug", () => {
+    assertOpcode("JMP_I", 0x6c);
+    const ram = getRam({
+      0x00: 0x6c,
+      0x01: 0xff,
+      0x02: 0x12, // Indirect vector at $12FF
+      0x12ff: 0xcd, // Low byte
+      0x1200: 0xab, // High byte (from $1200, not $1300)
+    });
+    const reg = getRegisters({ pc: 0x00 });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.JMP_I);
+    checkReg(reg, { pc: 0xabcd });
+  });
+
+  test("JSR", () => {
+    assertOpcode("JSR", 0x20);
+    const ram = getRam({ 0x00: 0x20, 0x01: 0x34, 0x02: 0x12 });
+    const reg = getRegisters({ pc: 0x00, stackPointer: 0xff });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.JSR);
+    checkReg(reg, { pc: 0x1234, stackPointer: 0xfd });
+    // PC is $0000, JSR is at $0000, $0001, $0002. It pushes PC+2 ($0002)
+    checkRam(ram, { 0x01ff: 0x00, 0x01fe: 0x02 });
+  });
+
+  test("RTS", () => {
+    assertOpcode("RTS", 0x60);
+    const ram = getRam({ 0x00: 0x60, 0x01ff: 0x12, 0x01fe: 0x33 }); // Pushed $1233
+    const reg = getRegisters({ pc: 0x00, stackPointer: 0xfd });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.RTS);
+    checkReg(reg, { pc: 0x1234, stackPointer: 0xff }); // Pulls $1233, adds 1
+  });
+});
+
+describe("Interrupt Instructions", () => {
+  test("NMI", () => {
+    assertOpcode("NMI", 0xfffa); // This is the vector, not an opcode
+    const ram = getRam({ 0xfffa: 0x34, 0xfffb: 0x12 }); // NMI vector -> $1234
+    const reg = getRegisters({
+      pc: 0xabcd,
+      stackPointer: 0xff,
+      interrupt: false,
+    });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.NMI);
+    checkReg(reg, { pc: 0xc60f, stackPointer: 0xfc });
+    checkFlags(reg, { interrupt: true });
+    // Pushes PC (ABCD) and Status
+    checkRam(ram, { 0x01ff: 0xab, 0x01fe: 0xcd });
+    // Status (bits 4&5 set, I=1)
+    expect(ram.get8(0x01fd)).toBe(reg.getStatusRegister());
+  });
+
+  test("RTI", () => {
+    assertOpcode("RTI", 0x40);
+    // Pushes 10101101 (N=1, V=0, D=0, I=0, Z=1, C=1)
+    // Pushes PC $ABCD
+    const ram = getRam({ 0x00: 0x40, 0x01ff: 0xab, 0x01fe: 0xcd, 0x01fd: 0xad });
+    const reg = getRegisters({ pc: 0x00, stackPointer: 0xfc, interrupt: true });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.RTI);
+    checkReg(reg, { pc: 0xabcd, stackPointer: 0xff });
+    checkFlags(reg, {
+      negative: true,
+      overflow: false,
+      decimal: false,
+      interrupt: true, zero: false, carry: true,
+    });
+  });
+});
+
+describe("Other Instructions", () => {
+  test("BIT_Z", () => {
+    assertOpcode("BIT_Z", 0x24);
+    // M = 11000001
+    // A = 01000001
+    // A & M = 01000001 (Z=0, V=0, N=1)
+    let ram = getRam({ 0x00: 0x24, 0x01: 0x10, 0x10: 0xc1 });
+    let reg = getRegisters({ a: 0x41 });
+    let run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.BIT_Z);
+    checkReg(reg, { pc: 2 });
+    checkFlags(reg, { zero: false, overflow: false, negative: true });
+
+    // M = 01000001
+    // A = 10000001
+    // A & M = 00000001 (Z=0, V=1, N=0)
+    ram = getRam({ 0x00: 0x24, 0x01: 0x10, 0x10: 0x41 });
+    reg = getRegisters({ a: 0x81 });
+    run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.BIT_Z);
+    checkReg(reg, { pc: 2 });
+    checkFlags(reg, { zero: false, overflow: true, negative: false });
+
+    // M = 00000001
+    // A = 00000010
+    // A & M = 00000000 (Z=1, V=0, N=0)
+    ram = getRam({ 0x00: 0x24, 0x01: 0x10, 0x10: 0x01 });
+    reg = getRegisters({ a: 0x02 });
+    run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.BIT_Z);
+    checkReg(reg, { pc: 2 });
+    checkFlags(reg, { zero: true, overflow: false, negative: false });
+  });
+
+  test("BIT_A", () => {
+    assertOpcode("BIT_A", 0x2c);
+    // M = 11000001
+    // A = 01000001
+    // A & M = 01000001 (Z=0, V=0, N=1)
+    let ram = getRam({ 0x00: 0x2c, 0x01: 0x34, 0x02: 0x12, 0x1234: 0xc1 });
+    let reg = getRegisters({ a: 0x41 });
+    let run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.BIT_A);
+    checkReg(reg, { pc: 3 });
+    checkFlags(reg, { zero: false, overflow: false, negative: true });
+
+    // M = 01000001
+    // A = 10000001
+    // A & M = 00000001 (Z=0, V=1, N=0)
+    ram = getRam({ 0x00: 0x2c, 0x01: 0x34, 0x02: 0x12, 0x1234: 0x41 });
+    reg = getRegisters({ a: 0x81 });
+    run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.BIT_A);
+    checkReg(reg, { pc: 3 });
+    checkFlags(reg, { zero: false, overflow: true, negative: false });
+
+    // M = 00000001
+    // A = 00000010
+    // A & M = 00000000 (Z=1, V=0, N=0)
+    ram = getRam({ 0x00: 0x2c, 0x01: 0x34, 0x02: 0x12, 0x1234: 0x01 });
+    reg = getRegisters({ a: 0x02 });
+    run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.BIT_A);
+    checkReg(reg, { pc: 3 });
+    checkFlags(reg, { zero: true, overflow: false, negative: false });
+  });
+
+  test("NOP", () => {
+    assertOpcode("NOP", 0xea);
+    const ram = getRam({ 0x00: 0xea });
+    const reg = getRegisters({ pc: 0x00 });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.NOP);
+    checkReg(reg, { pc: 1 });
+  });
+});
+
+describe("Illegal Instructions", () => {
+  test("NOP (Illegal - 1 byte)", () => {
+    const opcodes = [0x1a, 0x3a, 0x5a, 0x7a, 0xda, 0xfa];
+    opcodes.forEach((op, i) => {
+      const ram = getRam({ 0x00: op });
+      const reg = getRegisters({ pc: 0x00 });
+      const run = setup(ram, reg);
+      run.execute(op as CPU_INSTRUCTION);
+      checkReg(reg, { pc: 1 });
+    });
+  });
+
+  test("NOP (Illegal - 2 bytes)", () => {
+    const opcodes = [
+      0x80, 0x04, 0x44, 0x64, 0x14, 0x34, 0x54, 0x74, 0xd4, 0xf4,
+    ];
+    opcodes.forEach((op, i) => {
+      const ram = getRam({ 0x00: op, 0x01: 0xff });
+      const reg = getRegisters({ pc: 0x00 });
+      const run = setup(ram, reg);
+      run.execute(op as CPU_INSTRUCTION);
+      checkReg(reg, { pc: 2 });
+    });
+  });
+
+  test("NOP (Illegal - 3 bytes)", () => {
+    const opcodes = [0x0c, 0x1c, 0x3c, 0x5c, 0x7c, 0xdc, 0xfc];
+    opcodes.forEach((op, i) => {
+      const ram = getRam({ 0x00: op, 0x01: 0xff, 0x02: 0xff });
+      const reg = getRegisters({ pc: 0x00 });
+      const run = setup(ram, reg);
+      run.execute(op as CPU_INSTRUCTION);
+      checkReg(reg, { pc: 3 });
+    });
+  });
+
+  test("LAX_IX", () => {
+    assertOpcode("LAX_IX", 0xa3);
+    const ram = getRam({
+      0x00: 0xa3,
+      0x01: 0x05,
+      0x15: 0x02,
+      0x16: 0x1d,
+      0x1d02: 0xab,
+    });
+    const reg = getRegisters({ x: 0x10 });
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.LAX_IX);
+    checkReg(reg, { a: 0xab, x: 0xab, pc: 2 });
+    checkFlags(reg, { zero: false, negative: true });
+  });
+
+  test("LAX_Z", () => {
+    assertOpcode("LAX_Z", 0xa7);
+    const ram = getRam({ 0x00: 0xa7, 0x01: 0x08, 0x08: 0xab });
+    const reg = getRegisters({});
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.LAX_Z);
+    checkReg(reg, { a: 0xab, x: 0xab, pc: 2 });
+    checkFlags(reg, { zero: false, negative: true });
+  });
+
+  test("LAX_A", () => {
+    assertOpcode("LAX_A", 0xaf);
+    const ram = getRam({
+      0x00: 0xaf,
+      0x01: 0x05,
+      0x02: 0x2e,
+      0x2e05: 0xab,
+    });
+    const reg = getRegisters({});
+    const run = setup(ram, reg);
+    run.execute(CPU_INSTRUCTION.LAX_A);
+    checkReg(reg, { a: 0xab, x: 0xab, pc: 3 });
+    checkFlags(reg, { zero: false, negative: true });
+  });
+});
 
 function getBit(a: number, bit: number) {
   return !!(a & (1 << bit)) ? 1 : 0;
@@ -1827,158 +3282,15 @@ function bitAdd(a: number, b: number, c: boolean) {
     const bBit = getBit(b, bit);
     const bitResult = aBit + bBit + carry;
     carry = bitResult > 1 ? 1 : 0;
-    result += bitResult % 2 << bit;
+    result += (bitResult % 2) << bit;
     if (bit === 6) {
       carry6 = carry;
     }
   }
-  
-  
+
   return {
     result,
     carry: !!carry,
     overflow: !!(carry ^ carry6),
   };
 }
-
-describe("Arithmetic Instructions", () => {
-  test.only("SBC", () => {
-    const a = 128;
-    const b = 0;
-    const c = false
-    const compB = new Uint8Array([~b])[0];
-    const actual = bitAdd(128, compB, c);
-    expect(actual.carry).toBeTruthy();
-    expect(actual.result).toEqual(127);
-  });
-
-  // test("ADC_AY", () => {
-  //   const opcode = 0x79;
-  //   assertOpcode("ADC_AY", opcode);
-
-  //   // simple add (no flags, no carry)
-  //   const ram = getRam({ 0x00: opcode, 0x01: 0x05, 0x02: 0x00, 0x0a: 0x10 });
-  //   const reg = getRegisters({ pc: 0x00, a: 0x10, y: 0x05, carry: false });
-  //   Execute.ADC_AY(ram, reg);
-  //   expect(reg.getAccumulator()).toEqual(0x20);
-  //   checkFlags(reg, {
-  //     carry: false,
-  //     zero: false,
-  //     negative: false,
-  //     overflow: false,
-  //   });
-
-  //   // simple add with carry in (no flags)
-  //   const ram2 = getRam({ 0x00: opcode, 0x01: 0x05, 0x02: 0x00, 0x0a: 0x10 });
-  //   const reg2 = getRegisters({ pc: 0x00, a: 0x10, y: 0x05, carry: true });
-  //   Execute.ADC_AY(ram2, reg2);
-  //   expect(reg2.getAccumulator()).toEqual(0x21);
-  //   checkFlags(reg2, {
-  //     carry: false,
-  //     zero: false,
-  //     negative: false,
-  //     overflow: false,
-  //   });
-
-  //   // add - 6 bit carry only (sets overflow and negative)
-  //   const ram3 = getRam({ 0x00: opcode, 0x01: 0x05, 0x02: 0x00, 0x0a: 0x40 });
-  //   const reg3 = getRegisters({ pc: 0x00, a: 0x40, y: 0x05, carry: false });
-  //   Execute.ADC_AY(ram3, reg3);
-  //   expect(reg3.getAccumulator()).toEqual(0x80);
-  //   checkFlags(reg3, {
-  //     carry: false,
-  //     zero: false,
-  //     negative: true,
-  //     overflow: true,
-  //   });
-
-  //   // add with carry in - 6 bit carry only (sets overflow and negative)
-  //   const ram4 = getRam({ 0x00: opcode, 0x01: 0x05, 0x02: 0x00, 0x0a: 0x3f });
-  //   const reg4 = getRegisters({ pc: 0x00, a: 0x40, y: 0x05, carry: true });
-  //   Execute.ADC_AY(ram4, reg4);
-  //   expect(reg4.getAccumulator()).toEqual(0x80);
-  //   checkFlags(reg4, {
-  //     carry: false,
-  //     zero: false,
-  //     negative: true,
-  //     overflow: true,
-  //   });
-
-  //   // add - 7 bit carry only (sets carry, overflow)
-  //   const ram5 = getRam({ 0x00: opcode, 0x01: 0x05, 0x02: 0x00, 0x0a: 0x81 });
-  //   const reg5 = getRegisters({ pc: 0x00, a: 0x81, y: 0x05, carry: false });
-  //   Execute.ADC_AY(ram5, reg5);
-  //   expect(reg5.getAccumulator()).toEqual(0x02);
-  //   checkFlags(reg5, {
-  //     carry: true,
-  //     zero: false,
-  //     negative: false,
-  //     overflow: true,
-  //   });
-
-  //   // add with carry in - 7 bit carry only (sets carry, overflow)
-  //   const ram6 = getRam({ 0x00: opcode, 0x01: 0x05, 0x02: 0x00, 0x0a: 0x80 });
-  //   const reg6 = getRegisters({ pc: 0x00, a: 0x80, y: 0x05, carry: true });
-  //   Execute.ADC_AY(ram6, reg6);
-  //   expect(reg6.getAccumulator()).toEqual(0x01);
-  //   // TODO: fix this
-  //   checkFlags(reg6, {
-  //     carry: true,
-  //     zero: false,
-  //     negative: false,
-  //     overflow: true,
-  //   });
-
-  //   // add - 6&7 bit carry (sets carry, negative)
-  //   const ram7 = getRam({ 0x00: opcode, 0x01: 0x05, 0x02: 0x00, 0x0a: 0xff });
-  //   const reg7 = getRegisters({ pc: 0x00, a: 0xff, y: 0x05, carry: false });
-  //   Execute.ADC_AY(ram7, reg7);
-  //   expect(reg7.getAccumulator()).toEqual(0xfe);
-  //   checkFlags(reg7, {
-  //     carry: true,
-  //     zero: false,
-  //     negative: true,
-  //     overflow: false,
-  //   });
-
-  //   // add with carry in - 6&7 bit carry (sets carry, negative)
-  //   const ram8 = getRam({ 0x00: opcode, 0x01: 0x05, 0x02: 0x00, 0x0a: 0xfe });
-  //   const reg8 = getRegisters({ pc: 0x00, a: 0xff, y: 0x05, carry: true });
-  //   Execute.ADC_AY(ram8, reg8);
-  //   expect(reg8.getAccumulator()).toEqual(0xfe);
-  //   checkFlags(reg8, {
-  //     carry: true,
-  //     zero: false,
-  //     negative: true,
-  //     overflow: false,
-  //   });
-
-  //   // overflow add - zero (sets carry and zero)
-  //   const ram9 = getRam({ 0x00: opcode, 0x01: 0x05, 0x02: 0x00, 0x0a: 0xff });
-  //   const reg9 = getRegisters({ pc: 0x00, a: 0x01, y: 0x05, carry: false });
-  //   Execute.ADC_AY(ram9, reg9);
-  //   expect(reg9.getAccumulator()).toEqual(0x00);
-  //   checkFlags(reg9, {
-  //     carry: true,
-  //     zero: true,
-  //     negative: false,
-  //     overflow: false,
-  //   });
-
-  //   // overflow add with carry - zero (sets carry and zero)
-  //   const ram10 = getRam({ 0x00: opcode, 0x01: 0x05, 0x02: 0x00, 0x0a: 0xff });
-  //   const reg10 = getRegisters({ pc: 0x00, a: 0x00, y: 0x05, carry: true });
-  //   Execute.ADC_AY(ram10, reg10);
-  //   expect(reg10.getAccumulator()).toEqual(0x00);
-  //   checkFlags(reg10, {
-  //     carry: true,
-  //     zero: true,
-  //     negative: false,
-  //     overflow: false,
-  //   });
-  // });
-
-  // test("SBC_AY", () => {
-  //   // Write tests for this
-  // });
-});
