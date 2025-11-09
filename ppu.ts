@@ -11,7 +11,7 @@ interface SpriteData {
 
 interface SpritePixel {
   value: number; // 0-3  Actual value of the sprite pixel
-  // id: number; // 0-63 priority order in the sprite list, lower takes presidence
+  id: number; // 0-63 priority order in the sprite list, lower takes presidence
   hide: boolean; // whether to hide behind the background
   palette: number; // 0-3 which palette to use
 }
@@ -21,9 +21,7 @@ class PPU {
   private scanline = 0;
   private cycle = 0;
   private ram: RAM;
-  private PPU_CTRL: Uint8Array;
-  private PPU_MASK: Uint8Array;
-  private PPU_STATUS: Uint8Array;
+
   private CHRROM_LEFT!: Uint8Array;
   private CHRROM_RIGHT!: Uint8Array;
 
@@ -35,6 +33,7 @@ class PPU {
   private bgTiles: Array<Tile> = new Array(960).fill(null);
   private spriteTiles: Array<Tile> = new Array(960).fill(null);
   private frameData: Uint8ClampedArray = new Uint8ClampedArray(245760);
+  private imageData: ImageData;
 
   private oamData: Uint8Array = new Uint8Array(0x100);
 
@@ -46,12 +45,10 @@ class PPU {
     const canvas = document.getElementById("emu") as HTMLCanvasElement;
     this.ctx = canvas.getContext("2d")!;
     this.ram = ram;
-    this.PPU_CTRL = this.ram.getPPU_CTRL();
-    this.PPU_MASK = this.ram.getPPU_MASK();
-    this.PPU_STATUS = this.ram.getPPU_STATUS();
     this.paletteTable = this.loadPaletteTable();
     this.setCHRROM();
     this.setFakevRamDEMO();
+    this.imageData = new ImageData(this.frameData, 256, 240);
   }
 
   setFakevRamDEMO() {
@@ -84,8 +81,8 @@ class PPU {
       let bgPixel: number = 0;
       if (this.cycle < 256) {
         // Draw BG
-        this.bgTile = this.cycle % 8 === 0 ? this.getBgTile() : this.bgTile;
-        bgPixel = this.bgTile?.tile[this.scanline % 8][this.cycle % 8]!;
+        this.bgTile = (this.cycle & 7) === 0 ? this.getBgTile() : this.bgTile;
+        bgPixel = this.bgTile?.tile[this.scanline & 7][this.cycle & 7]!;
         this.renderPixel(bgPixel);
 
         // Draw Sprite
@@ -94,16 +91,26 @@ class PPU {
         if (sprite && sprite.value && !(sprite.hide && bgPixel)) {
           this.renderPixel(sprite.value, sprite.palette);
         }
+
+        if (
+          bgPixel > 0 &&
+          sprite?.hide === false &&
+          sprite?.value > 0 &&
+          sprite?.id === 0
+        ) {
+          this.setSprite0HitFlag();
+        }
       }
     }
     if (this.scanline === 240 && this.cycle === 0) {
       this.renderFrame();
     }
-    if (this.scanline == 241 && this.cycle === 0) {
+    if (this.scanline == 241 && this.cycle === 1) {
       this.setVBL_FLAG();
     }
-    if (this.scanline === 261 && this.cycle === 0) {
+    if (this.scanline === 261 && this.cycle === 1) {
       this.clearVBL_FLAG();
+      this.clearSprite0HitFlag();
     }
 
     this.cycle++;
@@ -120,7 +127,14 @@ class PPU {
       const data = this.getSpriteData(this.oamData[i * 4 + 2]);
       const spriteX = this.oamData[i * 4];
       const spriteY = this.oamData[i * 4 + 3];
-      this.buildSpritePixelsForSprite(tile, data, spriteX, spriteY, i === 63);
+      this.buildSpritePixelsForSprite(
+        tile,
+        data,
+        spriteX,
+        spriteY,
+        i === 63,
+        i
+      );
     }
   }
 
@@ -133,7 +147,8 @@ class PPU {
     data: SpriteData,
     spriteY: number,
     spriteX: number,
-    clear: boolean
+    clear: boolean,
+    id: number
   ) {
     for (let tileY = 0; tileY < 8; tileY++) {
       for (let tileX = 0; tileX < 8; tileX++) {
@@ -147,6 +162,7 @@ class PPU {
             value,
             hide: data.behindBackground,
             palette: data.paletteIndex,
+            id,
           };
         }
       }
@@ -161,9 +177,44 @@ class PPU {
     };
   }
 
+  private getCHRBank(bank: number): Uint8Array {
+    const chrRom = this.ram.getCHRROM();
+    const chrBankMode = (this.ram.getControlRegister() >> 4) & 1;
+    let bankIndex: number;
+    const bankSize = chrBankMode === 0 ? 8192 : 4096;
+    const numBanks = chrRom.length / bankSize;
+
+    if (chrBankMode === 0) {
+      // 8KB mode
+      bankIndex = this.ram.getChrBank0Register() & 0x1e; // Use even bank number
+    } else {
+      // 4KB mode
+      if (bank === 0) {
+        bankIndex = this.ram.getChrBank0Register();
+      } else {
+        bankIndex = this.ram.getChrBank1Register();
+      }
+    }
+
+    bankIndex %= numBanks;
+    const offset = bankIndex * bankSize;
+    return chrRom.subarray(offset, offset + bankSize);
+  }
+
   setupPatternTables() {
-    this.bgPatternTable = this.getCHRROMbackgroundTable();
-    this.spritePatternTable = this.getCHRROMSpiteTable();
+    const chrBankMode = (this.ram.getControlRegister() >> 4) & 1;
+    // console.log('chrBankMode', chrBankMode)
+    if (chrBankMode === 0) {
+      // 8KB at a time
+      this.bgPatternTable = this.getCHRROMbackgroundTable();
+      this.spritePatternTable = this.getCHRROMSpiteTable();
+    } else {
+      // two 4KB banks
+      const bgBankIndex = (this.ram.getPPU_CTRL() >> 4) & 1;
+      const spriteBankIndex = (this.ram.getPPU_CTRL() >> 3) & 1;
+      this.bgPatternTable = this.getCHRBank(bgBankIndex);
+      this.spritePatternTable = this.getCHRBank(spriteBankIndex);
+    }
   }
 
   loadNameTable() {
@@ -201,85 +252,92 @@ class PPU {
   }
 
   getBgTile() {
-    const nameTableEntryAddress =
-      32 * Math.floor(this.scanline / 8) + Math.floor(this.cycle / 8);
-    const patternTableEntryValue = this.nameTable.at(nameTableEntryAddress)!;
+    const nameTableEntryAddress = 32 * (this.scanline >> 3) + (this.cycle >> 3);
+    const patternTableEntryValue = this.nameTable[nameTableEntryAddress]!;
     return this.bgTiles[patternTableEntryValue];
   }
 
   renderPixel(val: number, paletteIndex: number | null = null) {
     const start = (this.scanline * 256 + this.cycle) * 4;
-    const data = this.frameData.subarray(start, start + 4);
+    // const data = this.frameData.subarray(start, start + 4);
     const paletteValue =
       paletteIndex === null
         ? this.getBgPaletteValue(val)
         : this.getSpritePaletteValue(val, paletteIndex);
-    const palette = Palette.getPaletteFromCode(paletteValue);
-    Palette.loadData(data, palette);
+
+    const { red, green, blue, opacity } =
+      Palette.getPaletteFromCode(paletteValue);
+
+    this.frameData[start] = red;
+    this.frameData[start + 1] = green;
+    this.frameData[start + 2] = blue;
+    this.frameData[start + 3] = opacity;
   }
 
   getBgPaletteValue(val: number) {
+    if (val === 0) {
+      return this.paletteTable[0]!;
+    }
     const index = this.getBgAttributePalleteIndex();
-    return this.paletteTable.at(index * 4 + val)!;
+    return this.paletteTable[index * 4 + val]!;
   }
 
   getSpritePaletteValue(val: number, index: number) {
-    return this.paletteTable.at(index * 4 + val + 0x10)!;
+    return this.paletteTable[index * 4 + val + 0x10]!;
   }
 
   renderFrame() {
-    const imageData = new ImageData(this.frameData, 256, 240);
-    this.ctx.putImageData(imageData, 0, 0);
+    this.ctx.putImageData(this.imageData, 0, 0);
   }
 
   getBgAttributePalleteIndex() {
-    const quadrantX = Math.floor(this.cycle / 16);
-    const quadrantY = Math.floor(this.scanline / 16);
-    const byteAddress =
-      Math.floor(quadrantX / 2) + Math.floor(quadrantY / 2) * 8;
-    const attributeValue = this.attributeTable.at(byteAddress) || 0; // TODO: Fix
+    const quadrantX = this.cycle >> 4;
+    const quadrantY = this.scanline >> 4;
+    const byteAddress = (quadrantX >> 1) + ((quadrantY >> 1) * 8);
+    const attributeValue = this.attributeTable[byteAddress] || 0;
     const quadrant = (quadrantX % 2) + (quadrantY % 2 ? 2 : 0);
 
     return (attributeValue >> (2 * quadrant)) & 0b11;
   }
 
   getBaseNameTableAddress() {
-    const ptr: 0 | 1 | 2 | 3 = (this.ram.getPPU_CTRL()[0] & 0b11) as
-      | 0
-      | 1
-      | 2
-      | 3;
+    const ptr: 0 | 1 | 2 | 3 = (this.ram.getPPU_CTRL() & 0b11) as 0 | 1 | 2 | 3;
     return BASE_NAMETABLE_ADDRESS[ptr];
   }
 
   getCHRROMbackgroundTable() {
-    return !!(this.ram.getPPU_CTRL()[0] & 0b1_0000)
+    return !!(this.ram.getPPU_CTRL() & 0b1_0000)
       ? this.CHRROM_RIGHT
       : this.CHRROM_LEFT;
   }
   getCHRROMSpiteTable() {
-    return !!(this.ram.getPPU_CTRL()[0] & 0b1_0000)
+    return !!(this.ram.getPPU_CTRL() & 0b1_0000)
       ? this.CHRROM_LEFT
       : this.CHRROM_RIGHT;
   }
 
-  // These should be owned by RAM
-  getPPU_STATUS() {
-    return this.PPU_STATUS[0];
-  }
-
   setVBL_FLAG() {
-    const PPU_STATUS = this.getPPU_STATUS();
+    const PPU_STATUS = this.ram.getPPU_STATUS();
     this.setPPU_STATUS(PPU_STATUS | 0b10000000);
   }
 
   clearVBL_FLAG() {
-    const PPU_STATUS = this.getPPU_STATUS();
+    const PPU_STATUS = this.ram.getPPU_STATUS();
     this.setPPU_STATUS(PPU_STATUS & 0b01111111);
   }
 
   setPPU_STATUS(value: number) {
-    this.PPU_STATUS[0] = value;
+    this.ram.setPPU_STATUS(value);
+  }
+
+  setSprite0HitFlag() {
+    const PPU_STATUS = this.ram.getPPU_STATUS();
+    this.ram.setPPU_STATUS(PPU_STATUS | 0b01000000);
+  }
+
+  clearSprite0HitFlag() {
+    const PPU_STATUS = this.ram.getPPU_STATUS();
+    this.ram.setPPU_STATUS(PPU_STATUS & 0b10111111);
   }
 
   setCHRROM() {

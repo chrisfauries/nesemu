@@ -42,8 +42,7 @@ class CPU {
 
   resetVector() {
     this.registers.setProgramCounter(
-      this.ram.get16(this.registers.getProgramCounter())
-    );
+      this.ram.get16(0xfffc));
   }
 
   tick() {
@@ -85,7 +84,7 @@ class CPU {
     this.cyclesLeftForInstruction =
       CPU_INSTRUCTION_CYCLES[
         CPU_INSTRUCTION[this.instruction] as keyof typeof CPU_INSTRUCTION
-      ] - 1;
+      ] - 1  + this.ram.getExtraCycles();
   }
 
   // FOR TESTING

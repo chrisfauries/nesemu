@@ -101,7 +101,7 @@ export enum CPU_INSTRUCTION {
   EOR_A = 0x4d,
   /** Logical Exclusive OR - Absolute X (3 bytes / 4-5 cycles) */
   EOR_AX = 0x5d,
-  /** Logical Exclusive OR - Absolute X (3 bytes / 4-5 cycles) */
+  /** Logical Exclusive OR - Absolute Y (3 bytes / 4-5 cycles) */
   EOR_AY = 0x59,
   /** Logical Exclusive OR - Indirect X (2 bytes / 6 cycles) */
   EOR_IX = 0x41,

@@ -62,7 +62,7 @@ class Controller {
 
   releaseButton(button: Button) {
     this.ram.setControllerOneState(
-      this.ram.getControllerOneState() ^ (1 << button)
+      this.ram.getControllerOneState() & ~(1 << button)
     );
   }
 

@@ -450,47 +450,63 @@ class Utils {
   private getAbsoluteOffsetValue(
     register: Extract<DataRegister, DataRegister.X | DataRegister.Y>
   ) {
-    return this.ram.get8(
-      this.ram.get16(this.registers.getProgramCounter()) +
-        this.getRegisterValue(register)
-    );
+    const baseAddress = this.ram.get16(this.registers.getProgramCounter());
+    const finalAddress =
+      (baseAddress + this.getRegisterValue(register)) & 0xffff;
+    return this.ram.get8(finalAddress);
   }
 
   private setAbsoluteOffsetValue(
     register: Extract<DataRegister, DataRegister.X | DataRegister.Y>,
     val: number
   ) {
-    return this.ram.set8(
-      this.ram.get16(this.registers.getProgramCounter()) +
-        this.getRegisterValue(register),
-      val
-    );
+    const baseAddress = this.ram.get16(this.registers.getProgramCounter());
+    const finalAddress =
+      (baseAddress + this.getRegisterValue(register)) & 0xffff; // FIX
+    return this.ram.set8(finalAddress, val);
   }
 
   private getIndirectOffsetXValue() {
     const indirect = this.ram.get8(this.registers.getProgramCounter());
     const effective =
       (indirect + this.getRegisterValue(DataRegister.X)) % 0x100;
-    return this.ram.get8(this.ram.get16(effective));
+    const low = this.ram.get8(effective);
+    const high = this.ram.get8((effective + 1) % 0x100);
+    const address = (high << 8) | low;
+
+    return this.ram.get8(address);
   }
 
   private setIndirectOffsetXValue(val: number) {
     const indirect = this.ram.get8(this.registers.getProgramCounter());
     const effective =
       (indirect + this.getRegisterValue(DataRegister.X)) % 0x100;
-    return this.ram.set8(this.ram.get16(effective), val);
+    const low = this.ram.get8(effective);
+    const high = this.ram.get8((effective + 1) % 0x100);
+    const address = (high << 8) | low;
+
+    return this.ram.set8(address, val);
   }
 
   private getIndirectOffsetYValue() {
     const indirect = this.ram.get8(this.registers.getProgramCounter());
-    const address = this.ram.get16(indirect);
-    return this.ram.get8(address + this.getRegisterValue(DataRegister.Y));
+
+    const low = this.ram.get8(indirect);
+    const high = this.ram.get8((indirect + 1) % 0x100);
+    const address = (high << 8) | low;
+    const finalAddress =
+      (address + this.getRegisterValue(DataRegister.Y)) & 0xffff;
+    return this.ram.get8(finalAddress);
   }
 
   private setIndirectOffsetYValue(val: number) {
     const indirect = this.ram.get8(this.registers.getProgramCounter());
-    const address = this.ram.get16(indirect);
-    return this.ram.set8(address + this.getRegisterValue(DataRegister.Y), val);
+    const low = this.ram.get8(indirect);
+    const high = this.ram.get8((indirect + 1) % 0x100);
+    const address = (high << 8) | low;
+    const finalAddress =
+      (address + this.getRegisterValue(DataRegister.Y)) & 0xffff;
+    return this.ram.set8(finalAddress, val);
   }
 
   private getRelativeValue() {

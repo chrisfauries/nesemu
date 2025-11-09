@@ -7,32 +7,28 @@ export enum SpriteOrientation {
 
 class Tile {
   private raw: Uint8Array;
-  public tile: Array<Array<number>> = new Array(8)
-    .fill(null)
-    .map(() => new Array(8).fill(0));
+  public tile: Array<Array<number>> = new Array(8);
   constructor(raw: Uint8Array) {
     this.raw = raw;
     this.parse();
   }
 
   parse() {
-    const left = this.raw.subarray(0, 8);
-    left.forEach((byte, index) => {
-      const row = this.tile[index];
+    for(let y = 0; y < 8; y++) {
+      const row = new Array<number>(8);
 
-      for (let j = 0; j < row.length; j++) {
-        row[j] += !!(byte & (1 << (7 - j))) ? 1 : 0;
+      const leftByte = this.raw[y];
+      const rightByte = this.raw[y + 8];
+
+      for (let x = 0; x < 8; x++) {
+        const bitPosition = 1 << (7 - x);
+        const low = (leftByte & bitPosition) ? 1 : 0;
+        const high = (rightByte & bitPosition) ? 2 : 0;
+        row[x] = high | low;
       }
-    });
 
-    const right = this.raw.subarray(8, 16);
-    right.forEach((byte, index) => {
-      const row = this.tile[index];
-
-      for (let j = 0; j < row.length; j++) {
-        row[j] += !!(byte & (1 << (7 - j))) ? 2 : 0;
-      }
-    });
+      this.tile[y] = row;
+    }
   }
 
   getPixel(y: number, x: number, orientation: SpriteOrientation) {

@@ -2,6 +2,7 @@ import Cartridge from "./cartridge";
 import RAM from "./ram";
 import CPU from "./cpu";
 import PPU from "./ppu";
+import APU from "./apu";
 import Clock from "./clock";
 import Controller from "./controller";
 import fs from "fs";
@@ -11,6 +12,7 @@ let cartridge:Cartridge;
 let ram: RAM;
 let cpu: CPU;
 let ppu: PPU;
+let apu: APU;
 let clock: Clock;
 let controller: Controller;
 
@@ -53,7 +55,8 @@ createButton("load Game", () => {
   console.log("RAM: ", ram);
   cpu = new CPU(ram);
   ppu = new PPU(ram);
-  clock = new Clock(cpu, ppu);
+  apu = new APU(ram);
+  clock = new Clock(cpu, ppu, apu);
   controller = new Controller(ram);
 });
 createButton("step Clock", () => {
@@ -96,3 +99,43 @@ createButton("stop controller", () => {
   console.log("stopping controller");
   controller.stop();
 });
+
+createButton("test Pulse 1", () => {
+  console.log("testing pulse 1");
+  apu.testPulse1();
+  })
+
+createButton("test Pulse 2", () => {
+  console.log("testing pulse 2");
+  apu.testPulse2();
+  })
+
+createButton("test Triangle", () => {
+  console.log("testing triangle");
+  apu.testTriangle();
+  })
+
+createButton("test Noise", () => {
+  console.log("testing noise");
+  apu.testNoise();
+  })
+
+  const speedContainer = document.createElement("div");
+speedContainer.style.marginTop = "10px";
+container?.appendChild(speedContainer);
+
+const speeds = {
+  "30 FPS (0.5x)": 0.5,
+  "60 FPS (1x)": 1.0,
+  "90 FPS (1.5x)": 1.5,
+  "120 FPS (2x)": 2.0,
+};
+
+for (const [name, factor] of Object.entries(speeds)) {
+    createButton(name, () => {
+        if (clock) {
+            console.log(`Setting speed to ${name}`);
+            clock.setSpeed(factor);
+        }
+    });
+}

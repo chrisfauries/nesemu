@@ -75,14 +75,12 @@ interface RGBA {
     constructor() {}
   
     static getPaletteFromCode(code: number): RGBA {
-      return this.palettes[code];
-    }
-  
-    static loadData(data: Uint8ClampedArray, rgba: RGBA) {
-      data[0] = rgba.red;
-      data[1] = rgba.green;
-      data[2] = rgba.blue;
-      data[3] = rgba.opacity;
+      if (code in this.palettes) {
+        return this.palettes[code];
+      } else {
+        console.warn("loaded illegal palette: " + code);
+        return { red: 0, green: 0, blue: 0, opacity: 255 };
+      }
     }
   }
 
